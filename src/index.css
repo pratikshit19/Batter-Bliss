@@ -84,3 +84,12 @@ ul { list-style: none; padding: 0; margin: 0; }
   50%       { opacity: 1;   transform: scaleY(1.2); }
 }
 .scroll-pulse { animation: scrollPulse 2s ease-in-out infinite; }
+
+/* Auto-play entrance for step content that renders conditionally */
+@keyframes stepIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.step-in {
+  animation: stepIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
