@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* ── Brand Design Tokens via CSS custom properties ── */
+@theme {
+  --color-cream:        #F5EBD8;
+  --color-cream-light:  #FDF7EF;
+  --color-cream-mid:    #EDD9BE;
+  --color-brown-dark:   #2C1A0E;
+  --color-brown-mid:    #5C3317;
+  --color-brown-light:  #8B5E3C;
+  --color-rose:         #C4846A;
+  --color-rose-light:   #E8B89A;
+  --color-rose-pale:    #F2D5C4;
+  --color-gold:         #B8860B;
+
+  --font-serif:  'Playfair Display', Georgia, serif;
+  --font-script: 'Great Vibes', cursive;
+  --font-sans:   'DM Sans', system-ui, sans-serif;
+}
+
+/* ── Base styles ── */
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-cream-light);
+  color: var(--color-brown-dark);
+  overflow-x: hidden;
+}
+
+a  { text-decoration: none; }
+ul { list-style: none; padding: 0; margin: 0; }
+
+/* ── Scroll-reveal animation ── */
+[data-anim] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+[data-anim="fade-left"]  { transform: translateX(40px); }
+[data-anim="fade-right"] { transform: translateX(-40px); }
+[data-anim].is-visible   { opacity: 1 !important; transform: translate(0,0) !important; }
+
+[data-delay="80"]  { transition-delay: 80ms; }
+[data-delay="100"] { transition-delay: 100ms; }
+[data-delay="150"] { transition-delay: 150ms; }
+[data-delay="200"] { transition-delay: 200ms; }
+[data-delay="250"] { transition-delay: 250ms; }
+[data-delay="300"] { transition-delay: 300ms; }
+[data-delay="400"] { transition-delay: 400ms; }
+
+/* ── Script font helper ── */
+.script { font-family: var(--font-script); font-style: normal; }
+
+/* ── Marquee animation ── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-track { animation: marquee 30s linear infinite; }
+.marquee-track:hover { animation-play-state: paused; }
+
+/* ── Morphing blob ── */
+@keyframes morph {
+  0%   { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+  50%  { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+}
+.morph-blob { animation: morph 10s ease-in-out infinite alternate; }
+
+/* ── Float animation ── */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+.float-anim   { animation: floatY 4s ease-in-out infinite; }
+.float-delay  { animation-delay: 2s; }
+
+/* ── Scroll indicator ── */
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.4; transform: scaleY(1); }
+  50%       { opacity: 1;   transform: scaleY(1.2); }
+}
+.scroll-pulse { animation: scrollPulse 2s ease-in-out infinite; }
