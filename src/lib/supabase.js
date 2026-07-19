@@ -8,6 +8,12 @@ if (!supabaseUrl || supabaseUrl === 'your_supabase_project_url') {
 }
 
 export const supabase = createClient(
-  supabaseUrl  || 'https://placeholder.supabase.co',
-  supabaseKey  || 'placeholder-key'
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: false,   // ← session lives in memory only, never saved to localStorage
+      autoRefreshToken: true,  // ← still refreshes token while the tab is open
+    },
+  }
 )
