@@ -1,32 +1,32 @@
 import { useAnimateOnScroll } from '../hooks/useAnimateOnScroll'
 
-const products = [
+const highlights = [
   {
     id: 'brownies',
     img: '/images/brownies.png',
-    alt: 'Fudgy brownies by Batter and Bliss',
+    alt: 'Fudgy Brownies by Batter and Bliss',
     tag: '⭐ Bestseller',
-    title: 'Fudgy Brownies ♡',
-    desc: "Rich, dense, and irresistibly chocolatey with a perfect crinkly top and fudgy centre you'll crave again and again.",
-    variants: ['Classic Fudgy', 'Choco Chip Loaded', 'Walnut Crunch', 'Brownie Bites Jar'],
+    title: 'Fudgy Brownies',
+    tagline: 'Dense, rich & irresistibly chocolatey',
+    startingFrom: '₹550',
   },
   {
-    id: 'cakes',
+    id: 'tea-cakes',
     img: '/images/cake.png',
-    alt: 'Marble Tea Cake by Batter and Bliss',
-    tag: '✨ New Arrival',
-    title: 'Dry Cakes ♡',
-    desc: 'Soft, moist loaf cakes perfect for gifting or savoring with your evening chai. Classic • Simple • Soft.',
-    variants: ['Marble Tea Cake', 'Chocolate Loaf', 'Banana Walnut', 'Dates & Nut'],
+    alt: 'Tea Cakes by Batter and Bliss',
+    tag: '☕ Fan Favourite',
+    title: 'Tea Cakes',
+    tagline: 'Soft loaf cakes, perfect with chai',
+    startingFrom: '₹400',
   },
   {
-    id: 'hampers',
+    id: 'cake-jars',
     img: '/images/hamper.png',
-    alt: 'Batter and Bliss gift hamper',
+    alt: 'Cake Jars by Batter and Bliss',
     tag: '🎁 Perfect Gift',
-    title: 'Gift Hampers ♡',
-    desc: 'Thoughtfully curated for birthdays, anniversaries, or corporate gifting. Beautiful packaging, beautiful taste.',
-    variants: ['Brownie Box (6 pcs)', 'Brownie + Bites Combo', 'Bakes & Treats Hamper', 'Custom Hampers'],
+    title: 'Cake Jars',
+    tagline: 'Layered jars — adorable & delicious',
+    startingFrom: '₹250',
   },
 ]
 
@@ -38,79 +38,89 @@ export default function Menu() {
 
   return (
     <section id="menu" className="py-24 bg-gradient-to-b from-cream to-cream-light">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-6">
 
         {/* Header */}
         <div className="text-center mb-14" data-anim="fade-up">
           <p className="text-xs font-medium tracking-[0.18em] uppercase text-rose mb-2">
-            What We Offer
+            What We Bake
           </p>
           <h2 className="font-serif text-4xl lg:text-5xl font-semibold text-brown-dark leading-[1.2] mb-3">
-            Our <span className="script text-rose text-[1.15em]">Sweet</span> Menu ♡
+            A little taste of <span className="script text-rose text-[1.15em]">everything</span> ♡
           </h2>
-          <p className="text-brown-light text-base max-w-md mx-auto leading-relaxed">
-            Every item is freshly baked after you order — never pre-made, never stored.
+          <p className="text-brown-light text-base max-w-sm mx-auto leading-relaxed">
+            Freshly baked after every order — never pre-made, never stored.
           </p>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-          {products.map((p, i) => (
+        {/* Three hero tiles */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5" data-anim="fade-up" data-delay="100">
+          {highlights.map((item, i) => (
             <div
-              key={p.id}
+              key={item.id}
               data-anim="fade-up"
-              data-delay={String(i * 100)}
-              className="bg-white rounded-2xl overflow-hidden border border-rose/12
-                         shadow-[0_4px_24px_rgba(44,26,14,0.08)]
-                         hover:-translate-y-2 hover:shadow-[0_16px_48px_rgba(44,26,14,0.15)]
-                         transition-all duration-350 flex flex-col group"
+              data-delay={String(i * 120)}
+              onClick={scrollToOrder}
+              className="relative rounded-3xl overflow-hidden cursor-pointer group
+                         shadow-[0_6px_30px_rgba(44,26,14,0.12)]
+                         hover:-translate-y-2 hover:shadow-[0_18px_50px_rgba(44,26,14,0.2)]
+                         transition-all duration-400"
             >
               {/* Image */}
-              <div className="relative overflow-hidden">
-                <img
-                  src={p.img}
-                  alt={p.alt}
-                  className="w-full aspect-[4/3] object-cover
-                             group-hover:scale-[1.07] transition-transform duration-500"
-                  loading="lazy"
-                />
-                <span className="absolute top-3 left-3 bg-brown-dark/88 text-cream text-[0.7rem]
-                                 font-medium px-3 py-1 rounded-full backdrop-blur-sm tracking-wide">
-                  {p.tag}
-                </span>
-              </div>
+              <img
+                src={item.img}
+                alt={item.alt}
+                className="w-full aspect-[3/4] object-cover group-hover:scale-[1.06] transition-transform duration-500"
+                loading="lazy"
+              />
 
-              {/* Body */}
-              <div className="p-5 flex flex-col gap-2.5 flex-1">
-                <h3 className="font-serif text-xl font-semibold text-brown-dark">
-                  {p.title}
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-brown-dark/80 via-brown-dark/20 to-transparent" />
+
+              {/* Tag badge */}
+              <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-brown-dark
+                               text-[0.65rem] font-semibold px-3 py-1 rounded-full tracking-wide shadow-sm">
+                {item.tag}
+              </span>
+
+              {/* Bottom text */}
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <h3 className="font-serif text-xl font-semibold text-white mb-1">
+                  {item.title}
                 </h3>
-                <p className="text-brown-light text-sm leading-[1.7]">{p.desc}</p>
-
-                {/* Variants */}
-                <div className="flex flex-wrap gap-1.5 my-1">
-                  {p.variants.map(v => (
-                    <span key={v}
-                      className="text-[0.72rem] font-medium px-2.5 py-1 rounded-full
-                                 bg-rose/10 border border-rose/25 text-brown-mid">
-                      {v}
-                    </span>
-                  ))}
+                <p className="text-white/75 text-xs leading-snug mb-3">
+                  {item.tagline}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/90 text-xs font-medium">
+                    Starting <span className="font-bold text-sm text-white">{item.startingFrom}</span>
+                  </span>
+                  <span className="text-[0.7rem] font-semibold text-white/80
+                                   group-hover:text-white transition-colors duration-200">
+                    Order →
+                  </span>
                 </div>
-
-                <button
-                  onClick={scrollToOrder}
-                  className="mt-auto self-start px-5 py-2 rounded-full text-sm font-medium
-                             bg-rose-pale text-brown-dark border border-rose/20
-                             hover:bg-rose hover:text-white hover:-translate-y-0.5
-                             transition-all duration-250 cursor-pointer"
-                >
-                  Order Now →
-                </button>
               </div>
             </div>
           ))}
         </div>
+
+        {/* View full menu CTA */}
+        <div className="text-center mt-10" data-anim="fade-up" data-delay="400">
+          <p className="text-brown-light text-sm mb-4">
+            And much more — Tea Cakes, Guilt-Free bakes, Brownies & Cake Jars.
+          </p>
+          <a
+            href="/menu"
+            className="inline-flex items-center gap-2 px-7 py-3 rounded-full
+                       border border-brown-dark/25 text-brown-dark text-sm font-medium
+                       hover:bg-brown-dark hover:text-cream-light hover:border-brown-dark
+                       transition-all duration-250"
+          >
+            View Full Menu 📋
+          </a>
+        </div>
+
       </div>
     </section>
   )
