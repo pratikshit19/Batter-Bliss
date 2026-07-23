@@ -53,23 +53,14 @@ export default function Navbar() {
         <button
           onClick={() => scrollTo('home')}
           aria-label="Go to top"
-          className="flex items-center gap-2.5 cursor-pointer"
+          className="flex items-center cursor-pointer"
         >
-          {/* SVG Cloche */}
-          <svg width="36" height="36" viewBox="0 0 42 42" fill="none">
-            <ellipse cx="21" cy="35.5" rx="15" ry="2.2" stroke="#5C3317" strokeWidth="1.4"/>
-            <rect x="13" y="32.5" width="16" height="3" rx="1.5" stroke="#5C3317" strokeWidth="1.4"/>
-            <path d="M21 7C21 7 10.5 13 10.5 22.5C10.5 28.8 15.2 32.5 21 32.5C26.8 32.5 31.5 28.8 31.5 22.5C31.5 13 21 7 21 7Z"
-              stroke="#5C3317" strokeWidth="1.4" fill="none"/>
-            <path d="M19 5Q21 3 23 5" stroke="#C4846A" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-            <circle cx="21" cy="4" r="1.6" fill="#C4846A"/>
-            <path d="M17 21Q19 19 21 21Q23 23 25 21" stroke="#C4846A" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
-          </svg>
-          <span className="flex flex-col leading-none gap-0.5">
-            <span className="font-serif text-[0.95rem] font-bold text-brown-dark tracking-wide">Batter</span>
-            <span className="script text-[0.85rem] text-rose leading-none">&amp;</span>
-            <span className="font-serif text-[0.95rem] font-bold text-brown-dark tracking-wide">Bliss</span>
-          </span>
+          <img
+            src="/images/logo.png"
+            alt="Batter & Bliss"
+            className="h-14 w-auto object-contain"
+            style={{ mixBlendMode: 'multiply' }}
+          />
         </button>
 
         {/* Desktop nav */}

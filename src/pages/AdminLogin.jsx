@@ -41,16 +41,13 @@ export default function AdminLogin() {
       <div className="w-full max-w-sm relative">
         {/* Logo */}
         <div className="text-center mb-8">
-          <svg width="48" height="48" viewBox="0 0 42 42" fill="none" className="mx-auto mb-3">
-            <ellipse cx="21" cy="35.5" rx="15" ry="2.2" stroke="#5C3317" strokeWidth="1.4"/>
-            <rect x="13" y="32.5" width="16" height="3" rx="1.5" stroke="#5C3317" strokeWidth="1.4"/>
-            <path d="M21 7C21 7 10.5 13 10.5 22.5C10.5 28.8 15.2 32.5 21 32.5C26.8 32.5 31.5 28.8 31.5 22.5C31.5 13 21 7 21 7Z"
-              stroke="#5C3317" strokeWidth="1.4" fill="none"/>
-            <path d="M19 5Q21 3 23 5" stroke="#C4846A" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-            <circle cx="21" cy="4" r="1.6" fill="#C4846A"/>
-          </svg>
-          <h1 className="font-serif text-2xl font-bold text-brown-dark">Batter &amp; Bliss</h1>
-          <p className="text-brown-light text-sm mt-1">Admin Dashboard</p>
+          <img
+            src="/images/logo.png"
+            alt="Batter & Bliss"
+            className="h-32 w-auto object-contain mx-auto"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+          <p className="text-brown-light text-sm mt-2">Admin Dashboard</p>
         </div>
 
         {/* Card */}
