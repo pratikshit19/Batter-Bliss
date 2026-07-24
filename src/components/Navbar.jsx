@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 export default function Navbar() {
+  const navigate   = useNavigate()
+  const location   = useLocation()
+  const isMenuPage = location.pathname === '/menu'
   const [scrolled,      setScrolled]   = useState(false)
   const [menuOpen,      setMenuOpen]   = useState(false)
   const [activeSection, setActive]     = useState('home')
@@ -30,14 +34,17 @@ export default function Navbar() {
   }, [])
 
   const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    if (isMenuPage) {
+      navigate('/', { state: { scrollTo: id } })
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    }
     setMenuOpen(false)
   }
 
   const links = [
     { id: 'home',   label: 'Home' },
     { id: 'about',  label: 'About' },
-    { id: 'menu',   label: 'Menu' },
     { id: 'why-us', label: 'Why Us' },
   ]
 
@@ -58,7 +65,7 @@ export default function Navbar() {
           <img
             src="/images/logo.png"
             alt="Batter & Bliss"
-            className="h-14 w-auto object-contain"
+            className="h-20 w-auto object-contain"
             style={{ mixBlendMode: 'multiply' }}
           />
         </button>
@@ -70,7 +77,7 @@ export default function Navbar() {
               <button
                 onClick={() => scrollTo(id)}
                 className={`px-4 py-2 rounded-full font-sans text-sm transition-all duration-250 cursor-pointer ${
-                  activeSection === id
+                  !isMenuPage && activeSection === id
                     ? 'bg-rose/15 text-brown-dark font-medium'
                     : 'text-brown-mid hover:bg-rose/10 hover:text-brown-dark'
                 }`}
@@ -79,21 +86,20 @@ export default function Navbar() {
               </button>
             </li>
           ))}
-          {/* View Menu — only shown when admin has uploaded a menu */}
-          {menuUrl && (
-            <li>
-              <a
-                id="nav-view-menu-btn"
-                href={menuUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-full font-sans text-sm transition-all duration-250
-                           text-brown-mid hover:bg-rose/10 hover:text-brown-dark"
-              >
-                📋 View Menu
-              </a>
-            </li>
-          )}
+          {/* Menu page link */}
+          <li>
+            <button
+              onClick={() => { navigate('/menu'); setMenuOpen(false) }}
+              className={`px-4 py-2 rounded-full font-sans text-sm transition-all duration-250 cursor-pointer ${
+                isMenuPage
+                  ? 'bg-rose/15 text-brown-dark font-medium'
+                  : 'text-brown-mid hover:bg-rose/10 hover:text-brown-dark'
+              }`}
+            >
+              Menu
+            </button>
+          </li>
+
           <li>
             <button
               id="nav-order-btn"
@@ -134,18 +140,15 @@ export default function Navbar() {
             {label}
           </button>
         ))}
-        {menuUrl && (
-          <a
-            href={menuUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setMenuOpen(false)}
-            className="text-left px-4 py-3 rounded-xl text-brown-mid text-base font-medium
-                       hover:bg-rose/10 hover:text-brown-dark transition-all duration-200"
-          >
-            📋 View Menu
-          </a>
-        )}
+        {/* Menu page link */}
+        <button
+          onClick={() => { navigate('/menu'); setMenuOpen(false) }}
+          className="text-left px-4 py-3 rounded-xl text-brown-mid text-base font-medium
+                     hover:bg-rose/10 hover:text-brown-dark transition-all duration-200 cursor-pointer"
+        >
+          Menu
+        </button>
+
         <button
           onClick={() => scrollTo('order')}
           className="mt-4 w-full py-3 rounded-full bg-brown-dark text-cream-light font-medium

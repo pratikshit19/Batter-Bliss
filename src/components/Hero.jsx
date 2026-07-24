@@ -64,7 +64,7 @@ export default function Hero() {
           </div>
 
           <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-            {['🍫 Fudgy Brownies', '🎂 Dry Cakes', '🎁 Gift Hampers'].map(b => (
+            {['🍫 Brownies', '☕ Tea Cakes', '🌿 Guilt-Free', '🍯 Cake Jars'].map(b => (
               <span key={b} className="text-xs font-medium px-3.5 py-1.5 rounded-full text-brown-mid
                                        bg-white/70 border border-rose/25 backdrop-blur-sm">
                 {b}
@@ -111,11 +111,7 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Scroll hint */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 hidden lg:flex">
-        <span className="text-[0.68rem] uppercase tracking-widest text-brown-mid">Scroll to explore</span>
-        <div className="w-px h-10 bg-gradient-to-b from-brown-mid to-transparent scroll-pulse" />
-      </div>
+
     </section>
   )
 }

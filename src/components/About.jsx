@@ -18,12 +18,6 @@ export default function About() {
                          group-hover:scale-[1.015] transition-transform duration-500"
               loading="lazy"
             />
-            {/* Badge overlay */}
-            <div className="absolute -bottom-5 -right-4 bg-brown-dark rounded-2xl
-                            px-5 py-4 text-center shadow-[0_8px_24px_rgba(44,26,14,0.22)]">
-              <p className="script text-cream text-2xl leading-none">Made with</p>
-              <p className="script text-rose text-3xl">Love ♡</p>
-            </div>
           </div>
 
           {/* Content */}
@@ -53,8 +47,6 @@ export default function About() {
                 { num: '100%', label: 'Eggless' },
                 null,
                 { num: '0',   label: 'Preservatives' },
-                null,
-                { num: '∞',   label: 'Love Added' },
               ].map((item, i) =>
                 item === null ? (
                   <div key={i} className="w-px h-10 bg-rose/30 shrink-0" />

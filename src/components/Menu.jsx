@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAnimateOnScroll } from '../hooks/useAnimateOnScroll'
 
 const highlights = [
@@ -110,15 +111,15 @@ export default function Menu() {
           <p className="text-brown-light text-sm mb-4">
             And much more — Tea Cakes, Guilt-Free bakes, Brownies & Cake Jars.
           </p>
-          <a
-            href="/menu"
+          <Link
+            to="/menu"
             className="inline-flex items-center gap-2 px-7 py-3 rounded-full
                        border border-brown-dark/25 text-brown-dark text-sm font-medium
                        hover:bg-brown-dark hover:text-cream-light hover:border-brown-dark
                        transition-all duration-250"
           >
             View Full Menu 📋
-          </a>
+          </Link>
         </div>
 
       </div>
