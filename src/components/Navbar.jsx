@@ -98,7 +98,7 @@ export default function Navbar() {
 
             {/* WhatsApp Direct Link */}
             <a
-              href="https://wa.me/919876543210"
+              href="https://wa.me/918860503685"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1.5 text-xs text-cream/90 hover:text-cream font-medium bg-white/10 px-3 py-1.5 rounded-full border border-white/15 transition-colors"
