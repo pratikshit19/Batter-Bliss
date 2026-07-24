@@ -54,17 +54,14 @@ const SLIDES = [
 
 export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
   const { addToCart, setIsCartOpen } = useCart()
-  const timerRef = useRef(null)
 
   useEffect(() => {
-    if (isPaused) return
-    timerRef.current = setInterval(() => {
+    const timer = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % SLIDES.length)
-    }, 5000)
-    return () => clearInterval(timerRef.current)
-  }, [isPaused])
+    }, 2000)
+    return () => clearInterval(timer)
+  }, [])
 
   const slide = SLIDES[currentSlide]
 
@@ -87,8 +84,6 @@ export default function HeroCarousel() {
   return (
     <section
       id="home"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
       className="relative min-h-[580px] pt-36 pb-16 flex flex-col justify-center overflow-hidden bg-cream-light transition-all duration-700"
     >
       {/* Background Gradient */}
@@ -96,7 +91,7 @@ export default function HeroCarousel() {
 
       <div className="max-w-6xl mx-auto px-6 relative z-10 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10">
-          
+
           {/* Content side */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left transition-all duration-500">
             <span className="mb-4 inline-block text-xs font-semibold tracking-widest text-brown-dark bg-white/80 border border-rose/30 px-4 py-1.5 rounded-full uppercase shadow-xs">
@@ -149,9 +144,8 @@ export default function HeroCarousel() {
             <button
               key={s.id}
               onClick={() => setCurrentSlide(idx)}
-              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                currentSlide === idx ? 'w-8 bg-brown-dark' : 'w-2.5 bg-brown-dark/30 hover:bg-brown-dark/60'
-              }`}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${currentSlide === idx ? 'w-8 bg-brown-dark' : 'w-2.5 bg-brown-dark/30 hover:bg-brown-dark/60'
+                }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
           ))}
