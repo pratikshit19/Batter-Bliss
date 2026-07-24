@@ -47,7 +47,7 @@ export default function Menu() {
         {/* Header */}
         <div className="text-center mb-14" data-anim="fade-up">
           <p className="text-xs font-medium tracking-[0.18em] uppercase text-rose mb-2">
-            What We Bake
+            OUR BESTSELLERS
           </p>
           <h2 className="font-serif text-4xl lg:text-5xl font-semibold text-brown-dark leading-[1.2] mb-3">
             A little taste of <span className="script text-rose text-[1.15em]">everything</span> ♡
@@ -80,11 +80,7 @@ export default function Menu() {
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-brown-dark/85 via-brown-dark/30 to-transparent" />
 
-                {/* Tag badge */}
-                <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-brown-dark
-                                 text-[0.65rem] font-semibold px-3 py-1 rounded-full tracking-wide shadow-sm">
-                  {item.tag}
-                </span>
+
 
                 {/* Bottom text & quick add */}
                 <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col gap-2">
