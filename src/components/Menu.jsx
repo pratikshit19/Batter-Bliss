@@ -1,44 +1,47 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAnimateOnScroll } from '../hooks/useAnimateOnScroll'
+import { useCart } from '../context/CartContext'
 
 const highlights = [
   {
-    id: 'brownies',
+    id: 'walnut-brownie_500g',
     img: '/images/brownies.png',
     alt: 'Fudgy Brownies by Batter and Bliss',
     tag: '⭐ Bestseller',
     title: 'Fudgy Brownies',
     tagline: 'Dense, rich & irresistibly chocolatey',
     startingFrom: '₹550',
+    itemData: { name: 'Walnut Brownie (500g)', price: 550, size: '500g', img: '/images/brownies.png' }
   },
   {
-    id: 'tea-cakes',
+    id: 'marble-cake_500g',
     img: '/images/cake.png',
     alt: 'Tea Cakes by Batter and Bliss',
     tag: '☕ Fan Favourite',
     title: 'Tea Cakes',
     tagline: 'Soft loaf cakes, perfect with chai',
     startingFrom: '₹400',
+    itemData: { name: 'Vanilla Tea Cake (500g)', price: 400, size: '500g', img: '/images/cake.png' }
   },
   {
-    id: 'cake-jars',
+    id: 'nutella-cake-jar_per jar',
     img: '/images/hamper.png',
     alt: 'Cake Jars by Batter and Bliss',
     tag: '🎁 Perfect Gift',
     title: 'Cake Jars',
     tagline: 'Layered jars — adorable & delicious',
     startingFrom: '₹250',
+    itemData: { name: 'Chocolate Cake Jar (per jar)', price: 250, size: 'per jar', img: '/images/hamper.png' }
   },
 ]
 
 export default function Menu() {
   useAnimateOnScroll()
-
-  const scrollToOrder = () =>
-    document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })
+  const navigate = useNavigate()
+  const { addToCart } = useCart()
 
   return (
-    <section id="menu" className="py-24 bg-gradient-to-b from-cream to-cream-light">
+    <section id="menu" className="pt-16 pb-8 bg-gradient-to-b from-cream to-cream-light">
       <div className="max-w-5xl mx-auto px-6">
 
         {/* Header */}
@@ -55,51 +58,57 @@ export default function Menu() {
         </div>
 
         {/* Three hero tiles */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5" data-anim="fade-up" data-delay="100">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6" data-anim="fade-up" data-delay="100">
           {highlights.map((item, i) => (
             <div
               key={item.id}
               data-anim="fade-up"
               data-delay={String(i * 120)}
-              onClick={scrollToOrder}
-              className="relative rounded-3xl overflow-hidden cursor-pointer group
+              className="relative rounded-3xl overflow-hidden group
                          shadow-[0_6px_30px_rgba(44,26,14,0.12)]
                          hover:-translate-y-2 hover:shadow-[0_18px_50px_rgba(44,26,14,0.2)]
-                         transition-all duration-400"
+                         transition-all duration-400 flex flex-col justify-between"
             >
               {/* Image */}
-              <img
-                src={item.img}
-                alt={item.alt}
-                className="w-full aspect-[3/4] object-cover group-hover:scale-[1.06] transition-transform duration-500"
-                loading="lazy"
-              />
+              <div className="relative w-full aspect-[3/4] overflow-hidden">
+                <img
+                  src={item.img}
+                  alt={item.alt}
+                  className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
+                  loading="lazy"
+                />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-brown-dark/85 via-brown-dark/30 to-transparent" />
 
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-brown-dark/80 via-brown-dark/20 to-transparent" />
+                {/* Tag badge */}
+                <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-brown-dark
+                                 text-[0.65rem] font-semibold px-3 py-1 rounded-full tracking-wide shadow-sm">
+                  {item.tag}
+                </span>
 
-              {/* Tag badge */}
-              <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-brown-dark
-                               text-[0.65rem] font-semibold px-3 py-1 rounded-full tracking-wide shadow-sm">
-                {item.tag}
-              </span>
+                {/* Bottom text & quick add */}
+                <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col gap-2">
+                  <div>
+                    <h3 className="font-serif text-xl font-semibold text-white mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-white/75 text-xs leading-snug">
+                      {item.tagline}
+                    </p>
+                  </div>
 
-              {/* Bottom text */}
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <h3 className="font-serif text-xl font-semibold text-white mb-1">
-                  {item.title}
-                </h3>
-                <p className="text-white/75 text-xs leading-snug mb-3">
-                  {item.tagline}
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-white/90 text-xs font-medium">
-                    Starting <span className="font-bold text-sm text-white">{item.startingFrom}</span>
-                  </span>
-                  <span className="text-[0.7rem] font-semibold text-white/80
-                                   group-hover:text-white transition-colors duration-200">
-                    Order →
-                  </span>
+                  <div className="flex items-center justify-between pt-2 border-t border-white/15 mt-1">
+                    <span className="text-white/90 text-xs font-medium">
+                      Starting <span className="font-bold text-sm text-white">{item.startingFrom}</span>
+                    </span>
+                    <button
+                      onClick={() => addToCart(item.id, item.itemData)}
+                      className="px-3.5 py-1.5 rounded-full bg-white text-brown-dark font-semibold text-xs
+                                 hover:bg-rose hover:text-white transition-all duration-200 cursor-pointer shadow-sm"
+                    >
+                      + Add to Basket
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -107,18 +116,18 @@ export default function Menu() {
         </div>
 
         {/* View full menu CTA */}
-        <div className="text-center mt-10" data-anim="fade-up" data-delay="400">
+        <div className="text-center mt-12" data-anim="fade-up" data-delay="400">
           <p className="text-brown-light text-sm mb-4">
-            And much more — Tea Cakes, Guilt-Free bakes, Brownies & Cake Jars.
+            Explore 25+ freshly baked items — Tea Cakes, Guilt-Free bakes, Brownies & Cake Jars.
           </p>
           <Link
             to="/menu"
-            className="inline-flex items-center gap-2 px-7 py-3 rounded-full
-                       border border-brown-dark/25 text-brown-dark text-sm font-medium
-                       hover:bg-brown-dark hover:text-cream-light hover:border-brown-dark
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full
+                       bg-brown-dark text-cream-light font-medium text-sm shadow-md
+                       hover:bg-brown-mid hover:-translate-y-0.5
                        transition-all duration-250"
           >
-            View Full Menu 📋
+            Explore Full Menu 📋
           </Link>
         </div>
 

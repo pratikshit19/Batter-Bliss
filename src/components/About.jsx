@@ -4,7 +4,7 @@ export default function About() {
   useAnimateOnScroll()
 
   return (
-    <section id="about" className="bg-cream-light py-24">
+    <section id="about" className="bg-cream-light pt-8 pb-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-16">
 

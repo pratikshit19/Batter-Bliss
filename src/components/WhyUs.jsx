@@ -1,12 +1,12 @@
 import { useAnimateOnScroll } from '../hooks/useAnimateOnScroll'
 
 const features = [
-  { icon: '🌿', title: 'Gluten Free Options',      desc: 'We offer gluten-free alternatives so everyone can enjoy our bakes without worry.' },
-  { icon: '🍳', title: 'Freshly Baked on Order',   desc: 'We bake only after you order — never pre-made, never stored. Maximum freshness.' },
-  { icon: '🌾', title: 'Premium Ingredients',      desc: 'We source only the finest cocoa, butter, and flour. Quality you can taste in every bite.' },
-  { icon: '🎁', title: 'Beautiful Packaging',      desc: 'Every order is lovingly packaged — perfect for gifting or treating yourself.' },
-  { icon: '🚀', title: 'Same-Day Delivery',        desc: 'Need it today? We deliver across Delhi NCR for last-minute gifting emergencies!' },
-  { icon: '💖', title: 'Made with Heart',          desc: 'Every bake carries our love and passion. Not just food — a feeling in every bite.' },
+  { icon: '🌿', title: 'Gluten Free Options', desc: 'We offer gluten-free alternatives so everyone can enjoy our bakes without worry.' },
+  { icon: '🍳', title: 'Freshly Baked on Order', desc: 'We bake only after you order — never pre-made, never stored. Maximum freshness.' },
+  { icon: '🌾', title: 'Finest Ingredients', desc: 'We source only the finest cocoa, butter, and flour. Quality you can taste in every bite.' },
+  { icon: '🎁', title: 'Premium Packaging', desc: 'Every order is lovingly packaged — perfect for gifting or treating yourself.' },
+  { icon: '🚀', title: 'Same-Day Delivery', desc: 'Need it today? We deliver across Delhi NCR for last-minute gifting emergencies!' },
+  { icon: '💖', title: 'Made with Heart', desc: 'Every bake carries our love and passion. Not just food — a feeling in every bite.' },
 ]
 
 export default function WhyUs() {

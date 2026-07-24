@@ -1,12 +1,13 @@
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import { CartProvider } from './context/CartContext'
+import CartDrawer       from './components/CartDrawer'
 import Navbar          from './components/Navbar'
-import Hero            from './components/Hero'
+import HeroCarousel    from './components/HeroCarousel'
 import Marquee         from './components/Marquee'
 import About           from './components/About'
 import Menu            from './components/Menu'
 import WhyUs           from './components/WhyUs'
-import OrderForm       from './components/OrderForm'
 import Testimonials    from './components/Testimonials'
 import Footer          from './components/Footer'
 import AdminLogin      from './pages/AdminLogin'
@@ -32,13 +33,12 @@ function MainSite() {
     <>
       <Navbar />
       <main>
-        <Hero />
+        <HeroCarousel />
         <Marquee />
-        <About />
         <Menu />
-        <WhyUs />
-        <OrderForm />
+        <About />
         <Testimonials />
+        <WhyUs />
       </main>
       <Footer />
     </>
@@ -47,11 +47,14 @@ function MainSite() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/"            element={<MainSite />} />
-      <Route path="/menu"         element={<MenuPage />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin"       element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-    </Routes>
+    <CartProvider>
+      <Routes>
+        <Route path="/"            element={<MainSite />} />
+        <Route path="/menu"         element={<MenuPage />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin"       element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      </Routes>
+      <CartDrawer />
+    </CartProvider>
   )
 }
