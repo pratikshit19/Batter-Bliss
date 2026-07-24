@@ -41,13 +41,13 @@ const DROPDOWN_ITEMS = {
 }
 
 const CATEGORY_STRIP = [
-  { label: '🪢 Rakhi Special', action: 'rakhi', badge: 'NEW' },
-  { label: '🍫 Brownies', action: 'brownies', hasDropdown: true },
-  { label: '☕ Tea Cakes', action: 'tea-cakes', hasDropdown: true },
-  { label: '🌿 Guilt-Free', action: 'guilt-free', hasDropdown: true },
-  { label: '🍯 Cake Jars', action: 'cake-jars', hasDropdown: true },
-  { label: '📖 Our Story', action: 'about' },
-  { label: '💖 Why Us', action: 'why-us' }
+  { label: 'Rakhi Special', action: 'rakhi', badge: 'NEW' },
+  { label: 'Brownies', action: 'brownies', hasDropdown: true },
+  { label: 'Tea Cakes', action: 'tea-cakes', hasDropdown: true },
+  { label: 'Guilt-Free', action: 'guilt-free', hasDropdown: true },
+  { label: 'Cake Jars', action: 'cake-jars', hasDropdown: true },
+  { label: 'Our Story', action: 'about' },
+  { label: 'Why Us', action: 'why-us' }
 ]
 
 export default function Navbar() {
@@ -105,7 +105,7 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 shadow-md">
-      
+
       {/* ── FESTIVAL ANNOUNCEMENT BAR ────────────────────────────────────── */}
       {festival && festival.active && (
         <div className={`${festival.colors.bannerBg} text-white py-1.5 px-4 text-center text-xs font-semibold tracking-wide flex items-center justify-center gap-2 shadow-inner`}>
@@ -122,7 +122,7 @@ export default function Navbar() {
       {/* ── TIER 1: Bakingo Top Header Bar ───────────────────────────────────── */}
       <div className="bg-brown-dark text-cream py-2.5 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
-          
+
           {/* Logo & City Selector */}
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
             <button
@@ -216,9 +216,8 @@ export default function Navbar() {
               >
                 <button
                   onClick={() => handleNavClick(item.action)}
-                  className={`font-medium transition-colors py-1 relative cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                    isRakhi ? 'text-purple-900 font-bold' : 'text-brown-dark hover:text-rose'
-                  }`}
+                  className={`font-medium transition-colors py-1 relative cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${isRakhi ? 'text-purple-900 font-bold' : 'text-brown-dark hover:text-rose'
+                    }`}
                 >
                   <span>{item.label}</span>
                   {hasSubMenu && <span className="text-[0.6rem] text-brown-light/60">▼</span>}
