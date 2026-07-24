@@ -4,15 +4,15 @@ import { useCart } from '../context/CartContext'
 const SLIDES = [
   {
     id: 'rakhi-special',
-    badge: '🪢 Limited Festival Edition',
-    title: 'Sweeten Your Rakhi ♡',
-    subtitle: 'Handcrafted Rakhi Gift Hampers, artisan brownies & festive bakes freshly made for your loved ones.',
+    badge: '🪢 Raksha Bandhan Special 🎁',
+    title: 'Sweeten Your Rakhi Bond ♡',
+    subtitle: 'Celebrate sibling love with handcrafted Rakhi hampers, artisan brownies & festive gift boxes in Purple, Green & Red themed packaging.',
     primaryBtn: { text: 'Shop Rakhi Hampers 🎁', action: 'rakhi' },
     secondaryBtn: { text: 'View Full Menu 📋', action: 'menu' },
     img: '/images/hamper.png',
-    bgGradient: 'from-purple-900/10 via-cream to-pink-500/10',
-    itemKey: 'walnut-brownie_500g',
-    itemData: { name: 'Walnut Brownie (500g)', price: 550, size: '500g', img: '/images/brownies.png' }
+    bgGradient: 'from-purple-950/25 via-red-950/15 to-emerald-950/20',
+    itemKey: 'rakhi-gourmet-hamper',
+    itemData: { name: 'Royal Rakhi Gourmet Box', price: 899, size: '1 Gift Box', img: '/images/hamper.png' }
   },
   {
     id: 'brownies-slide',
@@ -73,7 +73,7 @@ export default function HeroCarousel() {
     } else if (type === 'add-nutella-jar') {
       addToCart('nutella-cake-jar_per jar', { name: 'Nutella Cake Jar (per jar)', price: 350, size: 'per jar', img: '/images/hamper.png' })
     } else if (type === 'rakhi') {
-      addToCart('walnut-brownie_1kg', { name: 'Rakhi Special Brownie Box (1kg)', price: 1025, size: '1kg', img: '/images/hamper.png' })
+      document.getElementById('rakhi-special')?.scrollIntoView({ behavior: 'smooth' })
     } else if (type === 'menu') {
       window.location.href = '/menu'
     } else {
@@ -84,7 +84,7 @@ export default function HeroCarousel() {
   return (
     <section
       id="home"
-      className="relative min-h-[580px] pt-36 pb-16 flex flex-col justify-center overflow-hidden bg-cream-light transition-all duration-700"
+      className="relative min-h-[580px] pt-44 sm:pt-48 pb-16 flex flex-col justify-center overflow-hidden bg-cream-light transition-all duration-700"
     >
       {/* Background Gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${slide.bgGradient} transition-all duration-700`} />

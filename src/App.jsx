@@ -4,6 +4,7 @@ import { CartProvider } from './context/CartContext'
 import CartDrawer       from './components/CartDrawer'
 import Navbar          from './components/Navbar'
 import HeroCarousel    from './components/HeroCarousel'
+import FestivalSection from './components/FestivalSection'
 import Marquee         from './components/Marquee'
 import About           from './components/About'
 import Menu            from './components/Menu'
@@ -34,6 +35,7 @@ function MainSite() {
       <Navbar />
       <main>
         <HeroCarousel />
+        <FestivalSection />
         <Marquee />
         <Menu />
         <About />

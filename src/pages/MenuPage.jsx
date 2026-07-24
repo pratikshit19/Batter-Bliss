@@ -90,7 +90,7 @@ export default function MenuPage() {
       <Navbar />
 
       {/* Hero banner */}
-      <section className="pt-32 pb-12 bg-gradient-to-b from-cream to-cream-light text-center px-6">
+      <section className="pt-44 sm:pt-48 pb-12 bg-gradient-to-b from-cream to-cream-light text-center px-6">
         <p className="text-xs font-semibold tracking-[0.18em] uppercase text-rose mb-2">
           Batter &amp; Bliss
         </p>
@@ -103,7 +103,7 @@ export default function MenuPage() {
       </section>
 
       {/* Sticky category tabs */}
-      <div className="sticky top-[104px] z-40 bg-cream-light/95 backdrop-blur-md border-b border-rose/10 shadow-xs">
+      <div className="sticky top-[132px] z-40 bg-cream-light/95 backdrop-blur-md border-b border-rose/10 shadow-xs">
         <div className="max-w-4xl mx-auto px-6 py-3 flex gap-2 overflow-x-auto scrollbar-none">
           {MENU.map(cat => (
             <button
