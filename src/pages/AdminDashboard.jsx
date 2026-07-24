@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getSavedThemeSetting, setTestFestivalTheme } from '../utils/festivalConfig'
+import { getStoredMenuItems, saveMenuItems } from '../utils/menuManager'
 
 /* ── Status config ──────────────────────────────────────────────── */
 const STATUSES = [
@@ -26,500 +29,106 @@ const fmtTime = d => {
 const fmtCurrency = n => n ? `₹${Number(n).toLocaleString('en-IN')}` : '—'
 
 /* ═══════════════════════════════════════════════════════════════════
-   MENU TAB
-═══════════════════════════════════════════════════════════════════ */
-function MenuTab() {
-  const [currentMenu, setCurrentMenu] = useState(null)
-  const [uploading,   setUploading]   = useState(false)
-  const [deleting,    setDeleting]    = useState(false)
-  const [dragOver,    setDragOver]    = useState(false)
-  const [error,       setError]       = useState('')
-  const [success,     setSuccess]     = useState('')
-  const fileRef = useRef(null)
-
-  const fetchMenu = useCallback(async () => {
-    const { data } = await supabase
-      .from('settings')
-      .select('value, updated_at')
-      .eq('key', 'menu_url')
-      .single()
-    if (data?.value) {
-      setCurrentMenu({
-        url: data.value,
-        updated_at: data.updated_at,
-        isPdf: data.value.toLowerCase().includes('.pdf'),
-      })
-    } else {
-      setCurrentMenu(null)
-    }
-  }, [])
-
-  useEffect(() => { fetchMenu() }, [fetchMenu])
-
-  const uploadFile = async file => {
-    if (!file) return
-    setError(''); setSuccess('')
-
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File is too large. Maximum size is 10 MB.'); return
-    }
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-    if (!allowed.includes(file.type)) {
-      setError('Only JPG, PNG, WebP, and PDF files are allowed.'); return
-    }
-
-    setUploading(true)
-    try {
-      const ext      = file.name.split('.').pop()
-      const filename = `menu-${Date.now()}.${ext}`
-
-      /* Upload to Storage */
-      const { data: up, error: upErr } = await supabase.storage
-        .from('menu')
-        .upload(filename, file, { cacheControl: '3600', upsert: false })
-      if (upErr) throw upErr
-
-      /* Get public URL */
-      const { data: { publicUrl } } = supabase.storage.from('menu').getPublicUrl(up.path)
-
-      /* Remove old file from Storage */
-      if (currentMenu?.url) {
-        const oldPath = currentMenu.url.split('/object/public/menu/')[1]
-        if (oldPath) await supabase.storage.from('menu').remove([decodeURIComponent(oldPath)])
-      }
-
-      /* Persist URL in settings via UPDATE (row is pre-seeded, never INSERT) */
-      const { error: dbErr } = await supabase.from('settings')
-        .update({ value: publicUrl, updated_at: new Date().toISOString() })
-        .eq('key', 'menu_url')
-      if (dbErr) throw dbErr
-
-      setSuccess('✓ Menu uploaded! The "View Menu" button is now live on the website.')
-      fetchMenu()
-    } catch (err) {
-      setError(err.message || 'Upload failed. Please try again.')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const deleteMenu = async () => {
-    if (!window.confirm('Remove the current menu? Customers won\'t see a menu button until you upload a new one.')) return
-    setDeleting(true); setError(''); setSuccess('')
-    try {
-      if (currentMenu?.url) {
-        const path = currentMenu.url.split('/object/public/menu/')[1]
-        if (path) await supabase.storage.from('menu').remove([decodeURIComponent(path)])
-      }
-      await supabase.from('settings')
-        .update({ value: null, updated_at: new Date().toISOString() })
-        .eq('key', 'menu_url')
-      setCurrentMenu(null)
-      setSuccess('Menu removed from the website.')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  const handleDrop = e => {
-    e.preventDefault(); setDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) uploadFile(file)
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto">
-      <h2 className="font-serif text-xl font-semibold text-brown-dark mb-1">
-        Menu Management
-      </h2>
-      <p className="text-sm text-brown-light mb-7">
-        Upload your latest menu image or PDF. A <strong>"View Menu"</strong> button
-        will appear automatically in the website navbar once uploaded.
-      </p>
-
-      {/* ── Current menu preview ─────────────────────────────────── */}
-      {currentMenu && (
-        <div className="bg-white rounded-2xl border border-rose/15 shadow-sm overflow-hidden mb-6">
-          <div className="px-5 py-3.5 border-b border-rose/10 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-brown-light uppercase tracking-widest">
-                Current Menu
-              </p>
-              <p className="text-[0.68rem] text-brown-light/60 mt-0.5">
-                Last updated: {fmt(currentMenu.updated_at)} at {fmtTime(currentMenu.updated_at)}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <a
-                href={currentMenu.url} target="_blank" rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-rose/25
-                           text-brown-mid hover:bg-rose/8 transition-all cursor-pointer"
-              >
-                View ↗
-              </a>
-              <button
-                onClick={deleteMenu} disabled={deleting}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-red-200
-                           text-red-600 hover:bg-red-50 disabled:opacity-50
-                           transition-all cursor-pointer"
-              >
-                {deleting ? 'Removing…' : 'Remove'}
-              </button>
-            </div>
-          </div>
-
-          {currentMenu.isPdf ? (
-            <div className="flex flex-col items-center justify-center py-10 text-brown-light gap-3">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="1.4">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-              </svg>
-              <p className="text-sm font-medium text-brown-dark">PDF Menu uploaded</p>
-              <a href={currentMenu.url} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-rose hover:underline">Open PDF →</a>
-            </div>
-          ) : (
-            <img
-              src={currentMenu.url}
-              alt="Current menu"
-              className="w-full max-h-[28rem] object-contain bg-cream-light/40 p-4"
-            />
-          )}
-        </div>
-      )}
-
-      {/* ── Upload / drop zone ───────────────────────────────────── */}
-      <div
-        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        onClick={() => !uploading && fileRef.current?.click()}
-        className={`border-2 border-dashed rounded-2xl p-14 text-center
-                    transition-all duration-200 select-none ${
-          uploading
-            ? 'opacity-70 cursor-not-allowed border-rose/20'
-            : dragOver
-              ? 'border-rose bg-rose/6 scale-[1.01] cursor-copy'
-              : 'border-rose/25 hover:border-rose/50 hover:bg-rose/3 cursor-pointer'
-        }`}
-      >
-        <input
-          ref={fileRef} type="file"
-          accept="image/jpeg,image/png,image/webp,application/pdf"
-          className="hidden"
-          onChange={e => { if (e.target.files[0]) uploadFile(e.target.files[0]) }}
-        />
-
-        {uploading ? (
-          <>
-            <svg className="animate-spin w-11 h-11 text-rose mx-auto mb-3" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-            </svg>
-            <p className="font-semibold text-brown-mid">Uploading…</p>
-            <p className="text-xs text-brown-light mt-1">Please wait</p>
-          </>
-        ) : (
-          <>
-            <div className="w-16 h-16 bg-rose/10 rounded-2xl flex items-center
-                            justify-center mx-auto mb-4 transition-transform duration-200
-                            group-hover:scale-110">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                stroke="#C4846A" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-            </div>
-            <p className="font-semibold text-brown-dark text-base mb-1">
-              {currentMenu ? 'Replace Current Menu' : 'Upload Menu'}
-            </p>
-            <p className="text-sm text-brown-light mb-1">Drag &amp; drop here, or click to browse</p>
-            <p className="text-xs text-brown-light/50">JPG · PNG · WebP · PDF · Max 10 MB</p>
-          </>
-        )}
-      </div>
-
-      {/* Status messages */}
-      {success && (
-        <div className="mt-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl step-in">
-          <p className="text-sm text-green-700 font-medium">{success}</p>
-        </div>
-      )}
-      {error && (
-        <div className="mt-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl step-in">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════
    ORDERS TAB
 ═══════════════════════════════════════════════════════════════════ */
 function OrdersTab({ orders, loading, fetchOrders }) {
-  const [search,   setSearch]   = useState('')
-  const [filter,   setFilter]   = useState('all')
-  const [updating, setUpdating] = useState(null)
-  const [expanded, setExpanded] = useState(null)
+  const [activeFilter, setActiveFilter] = useState('all')
+  const [expandedId, setExpandedId] = useState(null)
+  const [updatingId, setUpdatingId] = useState(null)
 
-  const updateStatus = async (id, status) => {
-    setUpdating(id)
-    await supabase.from('orders').update({ status }).eq('id', id)
-    setUpdating(null)
-    fetchOrders()
+  const handleStatusChange = async (orderId, newStatus) => {
+    setUpdatingId(orderId)
+    await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
+    await fetchOrders()
+    setUpdatingId(null)
   }
 
-  const today       = new Date().toDateString()
-  const todayOrders  = orders.filter(o => new Date(o.created_at).toDateString() === today)
-  const todayRev     = todayOrders.filter(o => o.payment_status === 'paid')
-                         .reduce((s, o) => s + (o.amount_total || 0), 0)
-  const pendingCount = orders.filter(o => o.status === 'pending').length
-  const totalRev     = orders.filter(o => o.payment_status === 'paid')
-                         .reduce((s, o) => s + (o.amount_total || 0), 0)
-
-  const visible = orders.filter(o => {
-    const ok = filter === 'all' || o.status === filter
-    const q  = search.toLowerCase()
-    return ok && (!q ||
-      o.name?.toLowerCase().includes(q)    ||
-      o.phone?.toLowerCase().includes(q)   ||
-      o.area?.toLowerCase().includes(q)    ||
-      o.product?.toLowerCase().includes(q)
-    )
-  })
-
-  const StatCard = ({ icon, label, value, sub }) => (
-    <div className="bg-white rounded-2xl p-5 border border-rose/10 shadow-sm">
-      <div className="w-10 h-10 rounded-xl bg-rose/10 flex items-center justify-center text-xl mb-3">
-        {icon}
-      </div>
-      <p className="font-serif text-2xl font-bold text-brown-dark">{value}</p>
-      <p className="text-xs font-medium text-brown-light uppercase tracking-wide mt-0.5">{label}</p>
-      {sub && <p className="text-[0.68rem] text-brown-light/60 mt-0.5">{sub}</p>}
-    </div>
-  )
-
-  const StatusBadge = ({ status }) => {
-    const cfg = STATUS_MAP[status] || { label: status || 'pending', color: 'bg-gray-100 text-gray-600 border-gray-200' }
-    return (
-      <span className={`inline-flex px-2.5 py-1 rounded-full text-[0.68rem]
-                        font-semibold border ${cfg.color}`}>
-        {cfg.label}
-      </span>
-    )
-  }
+  const visible = activeFilter === 'all'
+    ? orders
+    : orders.filter(o => o.status === activeFilter)
 
   return (
-    <>
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon="📦" label="Orders Today"   value={todayOrders.length}       sub={fmt(new Date())} />
-        <StatCard icon="💰" label="Revenue Today"  value={fmtCurrency(todayRev)}    sub="Paid orders only" />
-        <StatCard icon="⏳" label="Pending Action" value={pendingCount}              sub="Need confirmation" />
-        <StatCard icon="🏆" label="Total Revenue"  value={fmtCurrency(totalRev)}    sub="All time" />
+    <div className="space-y-6">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+        {FILTER_TABS.map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveFilter(tab.value)}
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+              activeFilter === tab.value
+                ? 'bg-brown-dark text-cream-light shadow-md'
+                : 'bg-white border border-rose/20 text-brown-mid hover:bg-rose/5'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Search + filter */}
-      <div className="bg-white rounded-2xl border border-rose/12 shadow-sm mb-4 overflow-hidden">
-        <div className="px-4 py-3 border-b border-rose/10">
-          <div className="relative max-w-sm">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brown-light"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input
-              type="text" placeholder="Search by name, phone, area…"
-              value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-cream-light/60 rounded-xl
-                         border border-rose/20 text-brown-dark placeholder-brown-light/50
-                         focus:outline-none focus:border-rose/50 focus:ring-1 focus:ring-rose/15"
-            />
-          </div>
-        </div>
-        <div className="px-4 flex gap-1 overflow-x-auto py-2">
-          {FILTER_TABS.map(tab => {
-            const count = tab.value === 'all'
-              ? orders.length
-              : orders.filter(o => o.status === tab.value).length
-            return (
-              <button key={tab.value} onClick={() => setFilter(tab.value)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium
-                            transition-all duration-200 cursor-pointer ${
-                  filter === tab.value
-                    ? 'bg-brown-dark text-cream-light shadow-sm'
-                    : 'text-brown-mid hover:bg-rose/8'
-                }`}
-              >
-                {tab.label}
-                {count > 0 && (
-                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[0.6rem] font-bold ${
-                    filter === tab.value ? 'bg-white/20' : 'bg-rose/12'
-                  }`}>{count}</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Orders */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-rose/12 p-16 text-center">
-          <svg className="animate-spin w-8 h-8 text-rose mx-auto mb-3" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-          </svg>
-          <p className="text-brown-light text-sm">Loading orders…</p>
-        </div>
+        <div className="py-12 text-center text-brown-light text-sm">Loading orders…</div>
       ) : visible.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-rose/12 p-16 text-center">
-          <p className="text-4xl mb-3">🍫</p>
-          <p className="text-brown-dark font-serif text-lg font-semibold mb-1">No orders yet</p>
-          <p className="text-brown-light text-sm">
-            {search || filter !== 'all'
-              ? 'Try a different search or filter.'
-              : 'Orders will appear here once customers start placing them.'}
-          </p>
+        <div className="bg-white rounded-3xl p-12 text-center border border-rose/12 text-brown-light text-sm">
+          No orders found for this status.
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="space-y-3">
           {visible.map(order => {
-            const isExpanded = expanded === order.id
-            const st = STATUS_MAP[order.status] || { label: order.status, color: 'bg-gray-100 text-gray-600 border-gray-200' }
+            const st = STATUS_MAP[order.status] || STATUSES[0]
+            const isExpanded = expandedId === order.id
+
             return (
-              <div key={order.id}
-                className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all duration-200 ${
-                  order.status === 'pending' ? 'border-yellow-200' : 'border-rose/10'
-                }`}
+              <div
+                key={order.id}
+                className="bg-white rounded-2xl border border-rose/12 shadow-xs hover:shadow-sm transition-all overflow-hidden"
               >
-                {/* Row summary */}
                 <div
-                  className="flex items-center gap-3 px-4 py-3.5 cursor-pointer
-                              hover:bg-cream-light/40 transition-colors duration-150"
-                  onClick={() => setExpanded(isExpanded ? null : order.id)}
+                  onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
                 >
-                  <div className="shrink-0 hidden sm:block">
-                    <p className="text-[0.62rem] text-brown-light font-mono">
-                      {order.id.slice(0, 8).toUpperCase()}
-                    </p>
-                    <p className="text-[0.68rem] text-brown-light">{fmt(order.created_at)}</p>
-                    <p className="text-[0.62rem] text-brown-light/60">{fmtTime(order.created_at)}</p>
-                  </div>
-                  <div className="hidden sm:block w-px h-10 bg-rose/10 shrink-0" />
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-brown-dark text-sm">{order.name}</p>
-                      <StatusBadge status={order.status} />
-                      {order.payment_status === 'paid' && (
-                        <span className="text-[0.62rem] bg-green-50 text-green-700 border
-                                         border-green-200 px-2 py-0.5 rounded-full font-semibold">
-                          ✓ Paid
-                        </span>
-                      )}
-                      {order.gift_wrap && <span className="text-[0.62rem] text-rose">🎀</span>}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-cream-light border border-rose/20 flex items-center justify-center font-bold text-brown-dark text-xs shrink-0">
+                      #{order.id.slice(0, 4)}
                     </div>
-                    <p className="text-xs text-brown-light truncate max-w-xs mt-0.5">
-                      {order.product?.split(' | ').slice(0, 2).join(' · ')}
-                      {(order.product?.split(' | ').length || 0) > 2 ? ' …' : ''}
-                    </p>
+                    <div>
+                      <h4 className="font-bold text-brown-dark text-sm">{order.customer_name || 'Customer'}</h4>
+                      <p className="text-xs text-brown-light">{order.phone} · {order.address || 'Delhi NCR'}</p>
+                    </div>
                   </div>
 
-                  <div className="shrink-0 text-right hidden md:block">
-                    <p className="font-serif font-bold text-brown-dark">{fmtCurrency(order.amount_total)}</p>
-                    <p className="text-[0.68rem] text-brown-light">{fmt(order.delivery_date)}</p>
-                    <p className="text-[0.62rem] text-brown-light/70">{order.area}</p>
-                  </div>
+                  <div className="flex items-center gap-3 justify-between sm:justify-end">
+                    <div className="text-right">
+                      <p className="font-bold text-brown-dark text-sm">{fmtCurrency(order.total_amount)}</p>
+                      <p className="text-[0.68rem] text-brown-light/60">{fmt(order.created_at)}</p>
+                    </div>
 
-                  <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
-                    {/* WhatsApp */}
-                    <a
-                      href={`https://wa.me/${order.phone?.replace(/\D/g, '')}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-xl bg-green-50 border border-green-200 flex items-center
-                                 justify-center text-green-600 hover:bg-green-100 transition-colors"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.528 5.852L0 24l6.344-1.512A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.886 0-3.655-.487-5.193-1.343l-.372-.22-3.853.918.96-3.744-.243-.386A9.965 9.965 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
-                      </svg>
-                    </a>
-
-                    {/* Status dropdown */}
                     <select
-                      value={order.status || 'pending'}
-                      onChange={e => updateStatus(order.id, e.target.value)}
-                      disabled={updating === order.id}
-                      className={`text-[0.68rem] font-medium rounded-lg border px-2.5 py-1.5
-                                  cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose/30
-                                  disabled:opacity-60 ${st.color}`}
+                      value={order.status}
+                      disabled={updatingId === order.id}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => handleStatusChange(order.id, e.target.value)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${st.color} cursor-pointer focus:outline-none`}
                     >
                       {STATUSES.map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>
-
-                    <svg
-                      className={`w-4 h-4 text-brown-light transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="m6 9 6 6 6-6"/>
-                    </svg>
                   </div>
                 </div>
 
-                {/* Expanded */}
                 {isExpanded && (
-                  <div className="border-t border-rose/10 px-4 py-4 bg-cream-light/30
-                                  grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 step-in">
+                  <div className="px-5 pb-5 pt-2 border-t border-rose/10 bg-cream-light/30 text-xs space-y-3">
                     <div>
-                      <p className="text-[0.65rem] font-semibold text-brown-light uppercase tracking-widest mb-2">Customer</p>
-                      <p className="text-sm font-semibold text-brown-dark">{order.name}</p>
-                      <p className="text-sm text-brown-light">{order.phone}</p>
+                      <p className="font-semibold text-brown-light uppercase tracking-widest text-[0.65rem] mb-1">Items Ordered</p>
+                      <p className="text-brown-dark font-medium">{order.product}</p>
                     </div>
-                    <div>
-                      <p className="text-[0.65rem] font-semibold text-brown-light uppercase tracking-widest mb-2">Delivery</p>
-                      <p className="text-sm font-medium text-brown-dark">{fmt(order.delivery_date)}</p>
-                      <p className="text-sm text-brown-light">{order.area}</p>
-                    </div>
-                    <div>
-                      <p className="text-[0.65rem] font-semibold text-brown-light uppercase tracking-widest mb-2">Payment</p>
-                      <p className="text-sm font-bold text-brown-dark">{fmtCurrency(order.amount_total)}</p>
-                      <p className={`text-xs font-medium ${order.payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>
-                        {order.payment_status === 'paid' ? '✓ Paid via Razorpay' : '⏳ Payment pending'}
-                      </p>
-                      {order.payment_id && (
-                        <p className="text-[0.62rem] text-brown-light/60 font-mono mt-0.5">{order.payment_id}</p>
-                      )}
-                    </div>
-                    <div className="sm:col-span-2 lg:col-span-2">
-                      <p className="text-[0.65rem] font-semibold text-brown-light uppercase tracking-widest mb-2">Items</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {(order.product || '').split(' | ').map((item, i) => (
-                          <span key={i} className="text-xs bg-white border border-rose/20 text-brown-mid px-2.5 py-1 rounded-full">
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    {order.occasion && (
+                    {order.notes && (
                       <div>
-                        <p className="text-[0.65rem] font-semibold text-brown-light uppercase tracking-widest mb-2">Notes</p>
-                        <p className="text-sm text-brown-dark italic">"{order.occasion}"</p>
+                        <p className="font-semibold text-brown-light uppercase tracking-widest text-[0.65rem] mb-1">Special Notes</p>
+                        <p className="text-brown-dark italic">"{order.notes}"</p>
                       </div>
                     )}
-                    <div className="sm:col-span-2 lg:col-span-3 pt-2 border-t border-rose/10 flex items-center justify-between">
-                      <p className="text-[0.65rem] text-brown-light/60">
-                        Placed: {fmt(order.created_at)} at {fmtTime(order.created_at)}
-                      </p>
-                      <p className="text-[0.65rem] font-mono text-brown-light/40">ID: {order.id}</p>
-                    </div>
                   </div>
                 )}
               </div>
@@ -527,13 +136,517 @@ function OrdersTab({ orders, loading, fetchOrders }) {
           })}
         </div>
       )}
+    </div>
+  )
+}
 
-      {!loading && visible.length > 0 && (
-        <p className="text-center text-xs text-brown-light/50 mt-4">
-          Showing {visible.length} of {orders.length} order{orders.length !== 1 ? 's' : ''}
-        </p>
+/* ═══════════════════════════════════════════════════════════════════
+   INTERACTIVE MENU MANAGEMENT TAB
+═══════════════════════════════════════════════════════════════════ */
+function MenuTab() {
+  const [menuData, setMenuData] = useState(() => getStoredMenuItems())
+  const [activeCategory, setActiveCategory] = useState('all')
+  const [showModal, setShowModal] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)
+
+  const [formData, setFormData] = useState({
+    category: 'brownies',
+    name: '',
+    p500: '',
+    p1kg: '',
+    unit: '',
+    img: '/images/brownies.png'
+  })
+
+  const [success, setSuccess] = useState('')
+
+  const handleOpenAdd = () => {
+    setEditingItem(null)
+    setFormData({
+      category: 'brownies',
+      name: '',
+      p500: '',
+      p1kg: '',
+      unit: '',
+      img: '/images/brownies.png'
+    })
+    setShowModal(true)
+  }
+
+  const handleOpenEdit = (catId, item) => {
+    setEditingItem({ catId, itemId: item.id || item.name })
+    setFormData({
+      category: catId,
+      name: item.name,
+      p500: item.p500 || '',
+      p1kg: item.p1kg || '',
+      unit: item.unit || '',
+      img: item.img || '/images/cake.png'
+    })
+    setShowModal(true)
+  }
+
+  const handleDeleteItem = (catId, itemName) => {
+    if (!window.confirm(`Are you sure you want to delete "${itemName}"?`)) return
+
+    const updated = menuData.map(cat => {
+      if (cat.id === catId) {
+        return {
+          ...cat,
+          items: cat.items.filter(i => i.name !== itemName)
+        }
+      }
+      return cat
+    })
+
+    setMenuData(updated)
+    saveMenuItems(updated)
+    setSuccess(`Deleted "${itemName}"`)
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const handleSaveItem = (e) => {
+    e.preventDefault()
+    if (!formData.name.trim() || !formData.p500) return
+
+    const newItemObj = {
+      id: formData.name.toLowerCase().replace(/\s+/g, '-'),
+      name: formData.name.trim(),
+      p500: Number(formData.p500),
+      p1kg: formData.p1kg ? Number(formData.p1kg) : null,
+      unit: formData.unit.trim() || null,
+      img: formData.img.trim() || '/images/cake.png'
+    }
+
+    let updated = [...menuData]
+
+    if (editingItem) {
+      updated = updated.map(cat => {
+        if (cat.id === editingItem.catId) {
+          return {
+            ...cat,
+            items: cat.items.map(i => i.name === formData.name || i.id === editingItem.itemId ? newItemObj : i)
+          }
+        }
+        return cat
+      })
+    } else {
+      updated = updated.map(cat => {
+        if (cat.id === formData.category) {
+          return {
+            ...cat,
+            items: [newItemObj, ...cat.items]
+          }
+        }
+        return cat
+      })
+    }
+
+    setMenuData(updated)
+    saveMenuItems(updated)
+    setShowModal(false)
+    setSuccess(editingItem ? `Updated "${formData.name}"` : `Added "${formData.name}" to menu!`)
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const categories = [
+    { id: 'all', label: 'All Items 🍽️' },
+    { id: 'brownies', label: 'Brownies 🍫' },
+    { id: 'tea-cakes', label: 'Tea Cakes ☕' },
+    { id: 'guilt-free', label: 'Guilt-Free 🌿' },
+    { id: 'cake-jars', label: 'Cake Jars 🍯' },
+  ]
+
+  const displayCategories = activeCategory === 'all'
+    ? menuData
+    : menuData.filter(c => c.id === activeCategory)
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-3xl p-6 border border-rose/12 shadow-[0_4px_32px_rgba(44,26,14,0.08)]">
+        <div>
+          <span className="text-[0.68rem] font-bold text-rose uppercase tracking-widest">Interactive Menu Editor</span>
+          <h2 className="font-serif text-2xl font-bold text-brown-dark">Menu Item Management 🍽️</h2>
+          <p className="text-xs text-brown-light mt-1">
+            Add, edit or delete menu items. Any change updates the live website menu and dropdowns instantly.
+          </p>
+        </div>
+
+        <button
+          onClick={handleOpenAdd}
+          className="px-5 py-3 rounded-full bg-brown-dark text-cream-light font-medium text-xs shadow-md hover:bg-brown-mid transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <span>+ Add New Bake Item</span>
+        </button>
+      </div>
+
+      {success && (
+        <div className="p-3.5 bg-green-100 border border-green-300 text-green-800 rounded-2xl text-xs font-semibold animate-stepIn flex items-center justify-between">
+          <span>✓ {success}</span>
+          <span className="text-[0.65rem] opacity-75">Live Site Updated</span>
+        </div>
       )}
-    </>
+
+      {/* Category Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+              activeCategory === cat.id
+                ? 'bg-brown-dark text-cream-light shadow-md'
+                : 'bg-white border border-rose/20 text-brown-mid hover:bg-rose/5'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Categories & Items List */}
+      <div className="space-y-8">
+        {displayCategories.map(cat => (
+          <div key={cat.id} className="bg-white rounded-3xl p-6 border border-rose/12 shadow-[0_4px_32px_rgba(44,26,14,0.08)]">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-rose/10">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{cat.emoji}</span>
+                <h3 className="font-serif text-lg font-bold text-brown-dark">{cat.category}</h3>
+                <span className="text-xs text-brown-light/60">({cat.items.length} items)</span>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingItem(null)
+                  setFormData({ category: cat.id, name: '', p500: '', p1kg: '', unit: '', img: '/images/cake.png' })
+                  setShowModal(true)
+                }}
+                className="text-xs font-semibold text-rose hover:underline cursor-pointer"
+              >
+                + Add to {cat.category}
+              </button>
+            </div>
+
+            {/* Items Table */}
+            <div className="divide-y divide-rose/8">
+              {cat.items.map(item => (
+                <div key={item.name} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-rose/5 px-3 rounded-2xl transition-colors">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={item.img || '/images/cake.png'}
+                      alt={item.name}
+                      className="w-12 h-12 rounded-xl object-cover border border-rose/15 shrink-0"
+                    />
+                    <div>
+                      <h4 className="font-semibold text-brown-dark text-sm">{item.name}</h4>
+                      {item.unit && <span className="text-[0.68rem] text-rose font-medium">{item.unit}</span>}
+                    </div>
+                  </div>
+
+                  {/* Price info & Controls */}
+                  <div className="flex items-center gap-4 justify-between sm:justify-end">
+                    <div className="text-right text-xs">
+                      <div className="font-bold text-brown-dark">
+                        ₹{item.p500} <span className="text-[0.65rem] font-normal text-brown-light">(500g/unit)</span>
+                      </div>
+                      {item.p1kg && (
+                        <div className="text-brown-mid font-medium text-[0.72rem]">
+                          ₹{item.p1kg} <span className="text-[0.62rem] font-normal text-brown-light">(1kg)</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenEdit(cat.id, item)}
+                        className="px-3 py-1.5 rounded-lg bg-rose/10 text-brown-dark text-xs font-medium hover:bg-rose hover:text-white transition-colors cursor-pointer"
+                      >
+                        Edit ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(cat.id, item.name)}
+                        className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors cursor-pointer"
+                      >
+                        Delete 🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add / Edit Modal (Portalled to document.body to escape CSS transform stacking context) */}
+      {showModal && createPortal(
+        <div
+          onClick={() => setShowModal(false)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-brown-dark/60 backdrop-blur-md cursor-pointer"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-stepIn cursor-default border border-rose/15"
+          >
+            <div className="flex items-center justify-between border-b border-rose/15 pb-4">
+              <h3 className="font-serif text-xl font-bold text-brown-dark">
+                {editingItem ? 'Edit Menu Item' : 'Add New Bake Item'}
+              </h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-full bg-cream text-brown-dark font-bold text-sm hover:bg-rose/20 transition-colors cursor-pointer flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItem} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
+                  Category *
+                </label>
+                <select
+                  value={formData.category}
+                  disabled={!!editingItem}
+                  onChange={e => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 bg-white text-brown-dark text-sm focus:outline-none focus:border-rose"
+                >
+                  <option value="brownies">Brownies 🍫</option>
+                  <option value="tea-cakes">Tea Cakes ☕</option>
+                  <option value="guilt-free">Guilt-Free Bakes 🌿</option>
+                  <option value="cake-jars">Cake Jars 🍯</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
+                  Item Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Nutella Fudge Brownie"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 bg-white text-brown-dark text-sm focus:outline-none focus:border-rose"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
+                    500g / Unit Price (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="e.g. 550"
+                    value={formData.p500}
+                    onChange={e => setFormData({ ...formData, p500: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 bg-white text-brown-dark text-sm focus:outline-none focus:border-rose"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
+                    1kg Price (₹) (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 1025"
+                    value={formData.p1kg}
+                    onChange={e => setFormData({ ...formData, p1kg: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 bg-white text-brown-dark text-sm focus:outline-none focus:border-rose"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
+                  Unit Label / Note (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. per jar, per piece, or leave blank for 500g & 1kg"
+                  value={formData.unit}
+                  onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 bg-white text-brown-dark text-sm focus:outline-none focus:border-rose"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
+                  Product Image *
+                </label>
+                <div className="flex items-center gap-3">
+                  {formData.img && (
+                    <img
+                      src={formData.img}
+                      alt="Preview"
+                      className="w-14 h-14 rounded-xl object-cover border border-rose/20 shadow-xs shrink-0"
+                    />
+                  )}
+                  <label className="flex-1 border-2 border-dashed border-rose/30 hover:border-rose rounded-xl p-3 text-center cursor-pointer bg-cream-light/40 hover:bg-rose/5 transition-all">
+                    <span className="text-xs font-semibold text-brown-dark block">
+                      📷 {formData.img ? 'Change Image File' : 'Upload Image File'}
+                    </span>
+                    <span className="text-[0.65rem] text-brown-light block mt-0.5">JPG, PNG, WebP</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files[0]
+                        if (!file) return
+                        try {
+                          const ext = file.name.split('.').pop()
+                          const filename = `item-${Date.now()}.${ext}`
+                          const { data, error } = await supabase.storage
+                            .from('menu')
+                            .upload(filename, file, { cacheControl: '3600', upsert: true })
+
+                          if (!error && data?.path) {
+                            const { data: { publicUrl } } = supabase.storage.from('menu').getPublicUrl(data.path)
+                            setFormData(prev => ({ ...prev, img: publicUrl }))
+                          } else {
+                            const reader = new FileReader()
+                            reader.onload = (ev) => {
+                              setFormData(prev => ({ ...prev, img: ev.target.result }))
+                            }
+                            reader.readAsDataURL(file)
+                          }
+                        } catch {
+                          const reader = new FileReader()
+                          reader.onload = (ev) => {
+                            setFormData(prev => ({ ...prev, img: ev.target.result }))
+                          }
+                          reader.readAsDataURL(file)
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-3 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 py-3 rounded-full border border-brown-dark/20 text-brown-dark font-medium text-xs hover:bg-cream transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-full bg-brown-dark text-cream-light font-bold text-xs shadow-md hover:bg-brown-mid transition-all cursor-pointer"
+                >
+                  {editingItem ? 'Save Changes' : 'Add Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FESTIVE THEMES TAB
+═══════════════════════════════════════════════════════════════════ */
+function ThemesTab() {
+  const [selectedTheme, setSelectedTheme] = useState(() => getSavedThemeSetting())
+  const [savedStatus, setSavedStatus] = useState('')
+
+  const handleSelectTheme = (themeId) => {
+    setSelectedTheme(themeId)
+    setTestFestivalTheme(themeId)
+    setSavedStatus('Theme updated successfully!')
+    setTimeout(() => setSavedStatus(''), 3000)
+  }
+
+  const THEMES = [
+    { id: 'rakhi',     name: 'Raksha Bandhan', icon: '🪢', color: 'Purple, Green & Red Theme', bg: 'bg-purple-900 text-purple-100' },
+    { id: 'diwali',    name: 'Diwali',         icon: '🪔', color: 'Royal Gold, Amber & Maroon', bg: 'bg-amber-800 text-amber-100' },
+    { id: 'christmas', name: 'Christmas',      icon: '🎄', color: 'Festive Red, Green & Gold',  bg: 'bg-red-900 text-red-100' },
+    { id: 'holi',      name: 'Holi',           icon: '🎨', color: 'Gulal Pink, Cyan & Violet',   bg: 'bg-pink-800 text-pink-100' },
+    { id: 'auto',      name: 'Automatic Date-Based', icon: '🗓️', color: 'Auto-detects active date window', bg: 'bg-blue-900 text-blue-100' },
+    { id: 'none',      name: 'Standard Bakery Theme', icon: '🧁', color: 'Classic Batter & Bliss Warm Cream', bg: 'bg-brown-dark text-cream-light' }
+  ]
+
+  return (
+    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-rose/12 shadow-[0_4px_32px_rgba(44,26,14,0.08)] max-w-4xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose/10 pb-5">
+        <div>
+          <span className="text-[0.68rem] font-bold text-rose uppercase tracking-widest">Admin Control</span>
+          <h2 className="font-serif text-2xl font-bold text-brown-dark">Festive Theme System 🎨</h2>
+          <p className="text-xs text-brown-light mt-1">
+            Select a festival theme to activate across the entire website. Perfect for testing, previews, and seasonal campaigns.
+          </p>
+        </div>
+
+        <a
+          href="/"
+          target="_blank"
+          rel="noreferrer"
+          className="px-4 py-2 rounded-full bg-brown-dark text-cream-light font-medium text-xs shadow-md hover:bg-brown-mid transition-all shrink-0 text-center flex items-center justify-center gap-1.5"
+        >
+          <span>Live Site Preview</span>
+          <span>↗</span>
+        </a>
+      </div>
+
+      {savedStatus && (
+        <div className="p-3 bg-green-100 border border-green-300 text-green-800 rounded-xl text-xs font-semibold animate-stepIn">
+          ✓ {savedStatus}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {THEMES.map(t => {
+          const isSelected = selectedTheme === t.id
+          return (
+            <div
+              key={t.id}
+              onClick={() => handleSelectTheme(t.id)}
+              className={`rounded-2xl p-5 border transition-all cursor-pointer flex flex-col justify-between ${
+                isSelected
+                  ? 'border-brown-dark ring-2 ring-brown-dark/20 shadow-md bg-cream-light/60'
+                  : 'border-rose/15 bg-white hover:border-rose/40 hover:bg-rose/5'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-base ${t.bg}`}>
+                    {t.icon}
+                  </span>
+                  {isSelected && (
+                    <span className="bg-brown-dark text-cream text-[0.62rem] font-bold px-2 py-0.5 rounded-full">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="font-serif text-base font-bold text-brown-dark mb-1">{t.name}</h3>
+                <p className="text-[0.72rem] text-brown-light">{t.color}</p>
+              </div>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSelectTheme(t.id) }}
+                className={`mt-4 w-full py-2 rounded-xl text-xs font-bold transition-colors ${
+                  isSelected
+                    ? 'bg-brown-dark text-white'
+                    : 'bg-rose/10 text-brown-dark hover:bg-rose/20'
+                }`}
+              >
+                {isSelected ? 'Currently Selected' : 'Activate Theme'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -564,7 +677,6 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
-  /* Real-time updates */
   useEffect(() => {
     const ch = supabase.channel('admin-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
@@ -581,17 +693,14 @@ export default function AdminDashboard() {
 
   const TABS = [
     { id: 'orders', label: 'Orders', icon: '📦', badge: pendingCount || null },
-    { id: 'menu',   label: 'Menu',   icon: '🍽️', badge: null },
+    { id: 'menu',   label: 'Menu Management', icon: '🍽️', badge: null },
+    { id: 'themes', label: 'Festive Themes', icon: '🎨', badge: null },
   ]
 
   return (
     <div className="min-h-screen bg-[#F9F4EE]">
-
-      {/* ── Top nav ─────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-rose/12 sticky top-0 z-40
-                         shadow-[0_2px_12px_rgba(44,26,14,0.06)]">
+      <header className="bg-white border-b border-rose/12 sticky top-0 z-40 shadow-[0_2px_12px_rgba(44,26,14,0.06)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          {/* Brand */}
           <div className="flex items-center gap-2.5">
             <svg width="30" height="30" viewBox="0 0 42 42" fill="none">
               <ellipse cx="21" cy="35.5" rx="15" ry="2.2" stroke="#5C3317" strokeWidth="1.4"/>
@@ -603,48 +712,38 @@ export default function AdminDashboard() {
             </svg>
             <div>
               <span className="font-serif font-bold text-brown-dark text-sm">Batter &amp; Bliss</span>
-              <span className="ml-2 text-[0.65rem] bg-rose/10 text-rose border border-rose/20
-                               px-2 py-0.5 rounded-full font-medium">Admin</span>
+              <span className="ml-2 text-[0.65rem] bg-rose/10 text-rose border border-rose/20 px-2 py-0.5 rounded-full font-medium">Admin</span>
             </div>
           </div>
 
-          {/* Right controls */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-1.5 text-[0.68rem] text-green-600 font-medium">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"/>
               Live
             </div>
-            <button onClick={fetchOrders}
-              className="p-2 rounded-xl hover:bg-cream text-brown-light hover:text-brown-dark
-                         transition-colors duration-200 cursor-pointer" title="Refresh">
+            <button onClick={fetchOrders} className="p-2 rounded-xl hover:bg-cream text-brown-light hover:text-brown-dark transition-colors duration-200 cursor-pointer" title="Refresh">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M23 4v6h-6M1 20v-6h6"/>
                 <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
             <div className="hidden sm:flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-rose/15 flex items-center justify-center
-                              font-bold text-rose text-sm">
+              <div className="w-7 h-7 rounded-full bg-rose/15 flex items-center justify-center font-bold text-rose text-sm">
                 {user?.email?.[0]?.toUpperCase() || 'A'}
               </div>
             </div>
-            <button onClick={signOut}
-              className="px-3 py-1.5 rounded-lg text-[0.72rem] font-medium text-brown-mid
-                         hover:bg-rose/8 border border-rose/20 hover:border-rose/40
-                         transition-all duration-200 cursor-pointer">
+            <button onClick={signOut} className="px-3 py-1.5 rounded-lg text-[0.72rem] font-medium text-brown-mid hover:bg-rose/8 border border-rose/20 hover:border-rose/40 transition-all duration-200 cursor-pointer">
               Sign out
             </button>
           </div>
         </div>
 
-        {/* ── Tab bar ─────────────────────────────────────────────── */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-1 border-t border-rose/8">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium
-                          border-b-2 transition-all duration-200 cursor-pointer relative ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 cursor-pointer relative ${
                 activeTab === tab.id
                   ? 'border-brown-dark text-brown-dark'
                   : 'border-transparent text-brown-light hover:text-brown-mid hover:border-rose/30'
@@ -653,8 +752,7 @@ export default function AdminDashboard() {
               <span>{tab.icon}</span>
               {tab.label}
               {tab.badge ? (
-                <span className="w-5 h-5 rounded-full bg-rose text-white text-[0.6rem]
-                                 font-bold flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-rose text-white text-[0.6rem] font-bold flex items-center justify-center">
                   {tab.badge}
                 </span>
               ) : null}
@@ -663,7 +761,6 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* ── Main content ─────────────────────────────────────────── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {activeTab === 'orders' && (
           <OrdersTab orders={orders} loading={loading} fetchOrders={fetchOrders} />
@@ -671,6 +768,11 @@ export default function AdminDashboard() {
         {activeTab === 'menu' && (
           <div className="step-in">
             <MenuTab />
+          </div>
+        )}
+        {activeTab === 'themes' && (
+          <div className="step-in">
+            <ThemesTab />
           </div>
         )}
       </main>

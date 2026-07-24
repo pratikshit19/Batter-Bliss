@@ -55,11 +55,17 @@ export default function Navbar() {
   const location = useLocation()
   const isMenuPage = location.pathname === '/menu'
   const { addToCart, totalItems, setIsCartOpen } = useCart()
-  const festival = getActiveFestival()
 
+  const [festival, setFestival] = useState(() => getActiveFestival())
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeDropdown, setActiveDropdown] = useState(null)
+
+  useEffect(() => {
+    const handleThemeChange = () => setFestival(getActiveFestival())
+    window.addEventListener('festival-theme-change', handleThemeChange)
+    return () => window.removeEventListener('festival-theme-change', handleThemeChange)
+  }, [])
 
   const handleNavClick = (action) => {
     if (action === 'about' || action === 'why-us' || action === 'rakhi') {
@@ -70,7 +76,7 @@ export default function Navbar() {
         document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' })
       }
     } else {
-      navigate('/menu')
+      navigate('/menu', { state: { category: action } })
     }
     setMenuOpen(false)
   }
@@ -78,7 +84,7 @@ export default function Navbar() {
   const handleDropdownItemClick = (subItem, categoryKey) => {
     setActiveDropdown(null)
     if (subItem.name.startsWith('All ')) {
-      navigate('/menu')
+      navigate('/menu', { state: { category: categoryKey } })
     } else {
       const key = `${subItem.name.toLowerCase().replace(/\s+/g, '-')}_${subItem.size}`
       addToCart(key, {

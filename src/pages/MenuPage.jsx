@@ -1,87 +1,43 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
-
-/* ── Full Menu Data ──────────────────────────────────────────────── */
-const MENU = [
-  {
-    id: 'tea-cakes',
-    category: 'Tea Cakes',
-    emoji: '☕',
-    note: 'Available in 500g & 1kg',
-    items: [
-      { name: 'Vanilla Cake',             p500: 400,  p1kg: 750  },
-      { name: 'Marble Cake',              p500: 450,  p1kg: 850  },
-      { name: 'Chocolate Cake',           p500: 475,  p1kg: 925  },
-      { name: 'Dry Fruit Cake',           p500: 475,  p1kg: 925  },
-      { name: 'Vanilla Choco-Chip Cake',  p500: 475,  p1kg: 925  },
-      { name: 'Mahwa Cake',               p500: 500,  p1kg: 950  },
-      { name: 'Banana Walnut Cake',       p500: 550,  p1kg: 1050 },
-      { name: 'Coffee Cake',              p500: 450,  p1kg: 850  },
-      { name: 'Coffee Walnut Cake',       p500: 500,  p1kg: 950  },
-      { name: 'Nutella Cake',             p500: 500,  p1kg: 950  },
-      { name: 'Lemon Blueberry Cake',     p500: 550,  p1kg: 1025 },
-      { name: 'Classic Choco-Chip Cake',  p500: 500,  p1kg: 950  },
-      { name: 'Double Choco-Chip Cake',   p500: 550,  p1kg: 1000 },
-    ],
-  },
-  {
-    id: 'brownies',
-    category: 'Brownies',
-    emoji: '🍫',
-    note: 'Available in 500g & 1kg · Bites sold per piece',
-    items: [
-      { name: 'Walnut Brownie',      p500: 550,  p1kg: 1025 },
-      { name: 'Chocolate Brownie',   p500: 550,  p1kg: 1025 },
-      { name: 'Fudge Brownie',       p500: 600,  p1kg: 1150 },
-      { name: 'Nutella Brownie',     p500: 650,  p1kg: 1175 },
-      { name: 'Choco-Chip Brownie',  p500: 550,  p1kg: 1025 },
-      { name: 'Brownie Bites',       p500: 80,   p1kg: null, unit: 'per piece' },
-    ],
-  },
-  {
-    id: 'guilt-free',
-    category: 'Guilt-Free',
-    emoji: '🌿',
-    note: 'Wholesome ingredients · Available in 500g & 1kg',
-    items: [
-      { name: 'Banana Walnut Cake',      p500: 575,  p1kg: 1100 },
-      { name: 'Oats Banana Cake',        p500: 500,  p1kg: 950  },
-      { name: 'Oats Jaggery Atta Cake',  p500: 500,  p1kg: 950  },
-      { name: 'Wholewheat Dates Cake',   p500: 550,  p1kg: 1025 },
-      { name: 'Dates and Walnut Cake',   p500: 600,  p1kg: 1150 },
-    ],
-  },
-  {
-    id: 'cake-jars',
-    category: 'Cake Jars',
-    emoji: '🍯',
-    note: 'Priced per jar',
-    items: [
-      { name: 'Chocolate Cake Jar',      p500: 250,  p1kg: null, unit: 'per jar' },
-      { name: 'Truffle Cake Jar',        p500: 275,  p1kg: null, unit: 'per jar' },
-      { name: 'Dark Chocolate Cake Jar', p500: 250,  p1kg: null, unit: 'per jar' },
-      { name: 'Nutella Cake Jar',        p500: 350,  p1kg: null, unit: 'per jar' },
-      { name: 'Kitkar Cake Jar',         p500: 300,  p1kg: null, unit: 'per jar' },
-    ],
-  },
-]
+import { getStoredMenuItems } from '../utils/menuManager'
 
 export default function MenuPage() {
-  const [activeTab, setActiveTab] = useState(MENU[0].id)
-  const { addToCart, setIsCartOpen } = useCart()
+  const location = useLocation()
+  const [menuData, setMenuData] = useState(() => getStoredMenuItems())
+  const { addToCart } = useCart()
 
-  const active = MENU.find(m => m.id === activeTab)
+  useEffect(() => {
+    const handleMenuChange = () => setMenuData(getStoredMenuItems())
+    window.addEventListener('menu-data-change', handleMenuChange)
+    return () => window.removeEventListener('menu-data-change', handleMenuChange)
+  }, [])
 
-  const handleAdd = (itemName, sizeLabel, price) => {
-    const key = `${itemName.toLowerCase().replace(/\s+/g, '-')}_${sizeLabel}`
+  // Smooth scroll to category section when passed in location state
+  useEffect(() => {
+    const catId = location.state?.category
+    if (catId) {
+      setTimeout(() => {
+        const el = document.getElementById(catId)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 150)
+    }
+  }, [location.state])
+
+  const handleAdd = (item, sizeLabel, price, categoryId) => {
+    const key = `${item.name.toLowerCase().replace(/\s+/g, '-')}_${sizeLabel}`
+    const defaultImg = categoryId === 'brownies' ? '/images/brownies.png' : categoryId === 'cake-jars' ? '/images/hamper.png' : '/images/cake.png'
+
     addToCart(key, {
-      name: `${itemName} (${sizeLabel})`,
+      name: `${item.name} (${sizeLabel})`,
       price,
       size: sizeLabel,
-      img: activeTab === 'brownies' ? '/images/brownies.png' : activeTab === 'cake-jars' ? '/images/hamper.png' : '/images/cake.png'
+      img: item.img || defaultImg
     })
   }
 
@@ -90,113 +46,125 @@ export default function MenuPage() {
       <Navbar />
 
       {/* Hero banner */}
-      <section className="pt-44 sm:pt-48 pb-12 bg-gradient-to-b from-cream to-cream-light text-center px-6">
+      <section className="pt-44 sm:pt-48 pb-12 bg-gradient-to-b from-cream to-cream-light text-center px-6 border-b border-rose/10">
         <p className="text-xs font-semibold tracking-[0.18em] uppercase text-rose mb-2">
-          Batter &amp; Bliss
+          Handcrafted &amp; Eggless
         </p>
         <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-brown-dark leading-tight mb-3">
-          Our <span className="script text-rose text-[1.15em]">Menu</span> ♡
+          Our <span className="script text-rose text-[1.15em]">Bake Menu</span> ♡
         </h1>
-        <p className="text-brown-light text-sm sm:text-base max-w-sm mx-auto leading-relaxed">
-          Every item freshly baked after your order — never pre-made, never stored.
+        <p className="text-brown-light text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+          Every treat is freshly baked right after your order — premium ingredients, 100% eggless.
         </p>
       </section>
 
-      {/* Sticky category tabs */}
-      <div className="sticky top-[132px] z-40 bg-cream-light/95 backdrop-blur-md border-b border-rose/10 shadow-xs">
-        <div className="max-w-4xl mx-auto px-6 py-3 flex gap-2 overflow-x-auto scrollbar-none">
-          {MENU.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveTab(cat.id)}
-              className={`flex-shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all duration-250 cursor-pointer whitespace-nowrap ${
-                activeTab === cat.id
-                  ? 'bg-brown-dark text-cream-light shadow-md'
-                  : 'bg-white border border-rose/20 text-brown-mid hover:border-rose/50 hover:bg-rose/5'
-              }`}
-            >
-              {cat.emoji} {cat.category}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Menu table */}
-      <main className="max-w-4xl mx-auto px-6 py-12 min-h-[60vh]">
-
-        {/* Category header */}
-        <div className="mb-8">
-          <h2 className="font-serif text-3xl font-semibold text-brown-dark mb-1">
-            {active.emoji} {active.category}
-          </h2>
-          <p className="text-brown-light text-sm">{active.note}</p>
-        </div>
-
-        {/* Price table */}
-        <div className="bg-white rounded-3xl border border-rose/12 shadow-[0_4px_32px_rgba(44,26,14,0.08)] overflow-hidden">
-
-          {/* Table header */}
-          <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 sm:gap-x-6 px-4 sm:px-6 py-3 bg-cream border-b border-rose/10 text-[0.65rem] font-bold uppercase tracking-widest text-brown-light/70">
-            <span>Item Name</span>
-            <span className="text-right w-24 sm:w-28">500g Pack</span>
-            <span className="text-right w-24 sm:w-28">1kg Pack</span>
-          </div>
-
-          {/* Rows */}
-          {active.items.map((item, i) => (
-            <div
-              key={item.name}
-              className={`grid grid-cols-[1fr_auto_auto] gap-x-4 sm:gap-x-6 px-4 sm:px-6 py-4 items-center border-b border-rose/6 last:border-0 transition-colors duration-150 hover:bg-rose/5 ${
-                i % 2 === 0 ? '' : 'bg-cream/30'
-              }`}
-            >
-              <span className="font-medium text-brown-dark text-xs sm:text-sm">{item.name}</span>
-
-              {/* 500g / Unit Column */}
-              <div className="text-right w-24 sm:w-28">
-                <button
-                  onClick={() => handleAdd(item.name, item.unit || '500g', item.p500)}
-                  className="px-2.5 py-1 rounded-lg bg-rose/10 hover:bg-rose hover:text-white text-brown-dark font-semibold text-xs transition-colors cursor-pointer inline-flex items-center gap-1"
-                >
-                  <span>₹{item.p500}</span>
-                  <span className="text-[0.65rem] opacity-75">+ Add</span>
-                </button>
-                {item.unit && (
-                  <span className="block text-[0.6rem] font-normal text-brown-light/70 mt-0.5">{item.unit}</span>
+      {/* All Categories Continuous Menu List */}
+      <main className="max-w-6xl mx-auto px-6 py-12 space-y-16 min-h-[60vh]">
+        {menuData.map(category => (
+          <section key={category.id} id={category.id} className="scroll-mt-36 space-y-8">
+            
+            {/* Category Section Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-rose/20">
+              <div>
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-brown-dark flex items-center gap-3">
+                  <span className="text-3xl">{category.emoji}</span>
+                  <span>{category.category}</span>
+                </h2>
+                {category.note && (
+                  <p className="text-xs text-brown-light mt-1 font-sans font-medium">{category.note}</p>
                 )}
               </div>
-
-              {/* 1kg Column */}
-              <div className="text-right w-24 sm:w-28">
-                {item.p1kg ? (
-                  <button
-                    onClick={() => handleAdd(item.name, '1kg', item.p1kg)}
-                    className="px-2.5 py-1 rounded-lg bg-brown-dark/10 hover:bg-brown-dark hover:text-white text-brown-dark font-semibold text-xs transition-colors cursor-pointer inline-flex items-center gap-1"
-                  >
-                    <span>₹{item.p1kg}</span>
-                    <span className="text-[0.65rem] opacity-75">+ Add</span>
-                  </button>
-                ) : (
-                  <span className="text-xs text-brown-light/40 font-medium">—</span>
-                )}
-              </div>
+              <span className="text-xs text-brown-light/60 font-semibold">{category.items.length} items</span>
             </div>
-          ))}
-        </div>
 
-        {/* Basket CTA */}
-        <div className="text-center mt-12">
-          <p className="text-brown-light text-sm mb-4">
-            Selected your favorite bakes?
-          </p>
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="px-8 py-3.5 rounded-full bg-brown-dark text-cream-light font-medium text-sm shadow-md hover:bg-brown-mid hover:-translate-y-0.5 transition-all cursor-pointer inline-flex items-center gap-2"
-          >
-            <span>🛒 Open Basket & Checkout</span>
-          </button>
-        </div>
+            {/* Premium Vertical Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {category.items.map(item => {
+                const defaultImg = category.id === 'brownies' ? '/images/brownies.png' : category.id === 'cake-jars' ? '/images/hamper.png' : '/images/cake.png'
+                const imgSrc = item.img || defaultImg
 
+                return (
+                  <div
+                    key={item.name}
+                    className="bg-white rounded-3xl overflow-hidden border border-rose/15 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* Image Header with Aspect Ratio */}
+                      <div className="w-full h-52 relative overflow-hidden bg-cream-light/40">
+                        <img
+                          src={imgSrc}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-brown-dark/30 via-transparent to-transparent opacity-60" />
+
+                        {/* Unit Badge */}
+                        {item.unit && (
+                          <div className="absolute top-3 right-3 pointer-events-none">
+                            <span className="bg-brown-dark/90 backdrop-blur-md text-cream-light text-[0.62rem] font-bold px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
+                              {item.unit}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content Info */}
+                      <div className="p-5">
+                        <h3 className="font-serif text-xl font-bold text-brown-dark mb-1 leading-snug">
+                          {item.name}
+                        </h3>
+                        <p className="text-xs text-brown-light/80 leading-relaxed font-sans mb-4">
+                          Handcrafted with pure butter &amp; rich Belgian chocolate. Freshly baked to order.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions Footer */}
+                    <div className="p-5 pt-0">
+                      {item.p1kg ? (
+                        /* Dual Weight Options (500g & 1kg) */
+                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-rose/10">
+                          <button
+                            onClick={() => handleAdd(item, '500g', item.p500, category.id)}
+                            className="py-2.5 px-3 rounded-2xl bg-cream hover:bg-rose/20 text-brown-dark text-xs font-semibold border border-rose/25 transition-all flex flex-col items-center justify-center cursor-pointer active:scale-95"
+                          >
+                            <span className="text-[0.65rem] uppercase text-brown-light font-medium">500g</span>
+                            <span className="font-bold text-rose text-sm">₹{item.p500}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleAdd(item, '1kg', item.p1kg, category.id)}
+                            className="py-2.5 px-3 rounded-2xl bg-brown-dark text-cream hover:bg-brown-mid text-xs font-semibold transition-all flex flex-col items-center justify-center cursor-pointer shadow-sm active:scale-95"
+                          >
+                            <span className="text-[0.65rem] uppercase text-cream/70 font-medium">1kg</span>
+                            <span className="font-bold text-amber-300 text-sm">₹{item.p1kg}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        /* Single Unit Option (Cake Jars / Bites) */
+                        <div className="pt-3 border-t border-rose/10 flex items-center justify-between gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-[0.65rem] uppercase text-brown-light font-medium">Price</span>
+                            <span className="font-bold text-brown-dark text-lg">₹{item.p500}</span>
+                          </div>
+
+                          <button
+                            onClick={() => handleAdd(item, item.unit || '1 Unit', item.p500, category.id)}
+                            className="py-2.5 px-5 rounded-2xl bg-brown-dark text-cream hover:bg-brown-mid text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
+                          >
+                            <span>🛒 Add to Cart</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                )
+              })}
+            </div>
+
+          </section>
+        ))}
       </main>
 
       <Footer />
