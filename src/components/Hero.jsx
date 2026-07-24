@@ -59,7 +59,7 @@ export default function Hero() {
               className="px-7 py-3.5 rounded-full border-1.5 border-brown-mid text-brown-dark font-medium text-sm
                          hover:bg-cream-mid hover:-translate-y-1 transition-all duration-300"
             >
-              Explore Menu
+              Our Menu
             </a>
           </div>
 
