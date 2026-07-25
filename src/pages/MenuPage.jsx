@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
 import { getStoredMenuItems } from '../utils/menuManager'
+import { ShoppingBag } from 'lucide-react'
 
 export default function MenuPage() {
   const navigate = useNavigate()
@@ -145,50 +146,23 @@ export default function MenuPage() {
 
                     {/* Actions Footer */}
                     <div className="p-5 pt-0">
-                      {item.p1kg ? (
-                        /* Dual Weight Options (500g & 1kg) */
-                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-rose/10">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAdd(item, '500g', item.p500, category.id)
-                            }}
-                            className="py-2.5 px-3 rounded-2xl bg-cream hover:bg-rose/20 text-brown-dark text-xs font-semibold border border-rose/25 transition-all flex flex-col items-center justify-center cursor-pointer active:scale-95"
-                          >
-                            <span className="text-[0.65rem] uppercase text-brown-light font-medium">500g</span>
-                            <span className="font-bold text-rose text-sm">₹{item.p500}</span>
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAdd(item, '1kg', item.p1kg, category.id)
-                            }}
-                            className="py-2.5 px-3 rounded-2xl bg-brown-dark text-cream hover:bg-brown-mid text-xs font-semibold transition-all flex flex-col items-center justify-center cursor-pointer shadow-sm active:scale-95"
-                          >
-                            <span className="text-[0.65rem] uppercase text-cream/70 font-medium">1kg</span>
-                            <span className="font-bold text-amber-300 text-sm">₹{item.p1kg}</span>
-                          </button>
+                      <div className="pt-3 border-t border-rose/10 flex items-center justify-between gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-[0.65rem] uppercase text-brown-light font-medium">Price</span>
+                          <span className="font-bold text-brown-dark text-lg">₹{item.p500}</span>
                         </div>
-                      ) : (
-                        /* Single Unit Option (Cake Jars / Bites) */
-                        <div className="pt-3 border-t border-rose/10 flex items-center justify-between gap-3">
-                          <div className="flex flex-col">
-                            <span className="text-[0.65rem] uppercase text-brown-light font-medium">Price</span>
-                            <span className="font-bold text-brown-dark text-lg">₹{item.p500}</span>
-                          </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAdd(item, item.unit || '1 Unit', item.p500, category.id)
-                            }}
-                            className="py-2.5 px-5 rounded-2xl bg-brown-dark text-cream hover:bg-brown-mid text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
-                          >
-                            <span>🛒 Add to Cart</span>
-                          </button>
-                        </div>
-                      )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleAdd(item, item.p1kg ? '500g' : (item.unit || '1 Unit'), item.p500, category.id)
+                          }}
+                          className="py-2.5 px-4.5 rounded-2xl bg-brown-dark text-cream hover:bg-brown-mid text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>Add to Cart</span>
+                        </button>
+                      </div>
                     </div>
 
                   </div>
