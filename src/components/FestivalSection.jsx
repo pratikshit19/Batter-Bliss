@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getActiveFestival } from '../utils/festivalConfig'
 import { useCart } from '../context/CartContext'
+import { Sparkles, Gift, ShoppingBag, MessageCircle } from 'lucide-react'
 
 export default function FestivalSection() {
   const navigate = useNavigate()
@@ -33,11 +34,12 @@ export default function FestivalSection() {
         {/* Section Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 text-white text-xs font-bold uppercase tracking-widest mb-3 shadow-md border border-white/20">
-            <span>{festival.emoji} Limited Festive Edition</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Limited Festive Edition</span>
           </div>
 
           <h2 className="font-serif text-4xl sm:text-5xl font-bold text-white leading-tight mb-3">
-            {festival.name} <span className="script text-rose-300 text-[1.25em]">Hampers</span> ♡
+            {festival.name} <span className="script text-rose-300 text-[1.25em]">Hampers</span>
           </h2>
           <p className="text-cream/90 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
             {festival.hero.subtitle}
@@ -86,7 +88,8 @@ export default function FestivalSection() {
                       }}
                       className="w-full py-3 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-white/30"
                     >
-                      <span>💬 Custom Order on WhatsApp</span>
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Custom Order on WhatsApp</span>
                     </button>
                   ) : (
                     <button
@@ -101,7 +104,8 @@ export default function FestivalSection() {
                       }}
                       className="w-full py-3 rounded-full bg-white text-brown-dark font-bold text-xs shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:bg-cream"
                     >
-                      <span>🛒 Add Hamper (₹{product.price})</span>
+                      <ShoppingBag className="w-4 h-4 text-brown-dark" />
+                      <span>Add Hamper (₹{product.price})</span>
                     </button>
                   )}
                 </div>
@@ -113,14 +117,18 @@ export default function FestivalSection() {
         {/* Custom Order Callout Bar */}
         <div className="mt-12 bg-white/10 border border-white/20 rounded-3xl p-6 text-center max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg backdrop-blur-md">
           <div className="text-left">
-            <h4 className="font-serif text-lg font-bold text-white mb-1">Want a Custom {festival.name} Gift Box? 🎁</h4>
-            <p className="text-xs text-cream/80">Choose your custom flavors, add personalized notes & festive packaging.</p>
+            <h4 className="font-serif text-lg font-bold text-white mb-1 flex items-center gap-2">
+              <Gift className="w-5 h-5 text-amber-300 inline" />
+              <span>Want a Custom {festival.name} Gift Box?</span>
+            </h4>
+            <p className="text-xs text-cream/80">Choose your custom flavors, add personalized notes &amp; festive packaging.</p>
           </div>
           <button
             onClick={() => handleCustomWhatsApp(`Custom ${festival.name} Hamper`)}
-            className="px-6 py-3 rounded-full bg-white text-brown-dark font-bold text-xs hover:bg-cream transition-colors shadow-md shrink-0 cursor-pointer"
+            className="px-6 py-3 rounded-full bg-white text-brown-dark font-bold text-xs hover:bg-cream transition-colors shadow-md shrink-0 cursor-pointer flex items-center gap-2"
           >
-            💬 WhatsApp Custom Order
+            <MessageCircle className="w-4 h-4 text-brown-dark" />
+            <span>WhatsApp Custom Order</span>
           </button>
         </div>
 

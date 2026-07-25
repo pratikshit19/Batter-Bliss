@@ -1,13 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAnimateOnScroll } from '../hooks/useAnimateOnScroll'
 import { useCart } from '../context/CartContext'
+import { ShoppingBag, ArrowRight } from 'lucide-react'
 
 const highlights = [
   {
     id: 'walnut-brownie_500g',
     img: '/images/brownies.png',
     alt: 'Fudgy Brownies by Batter and Bliss',
-    tag: '⭐ Bestseller',
+    tag: 'Bestseller',
     title: 'Fudgy Brownies',
     tagline: 'Dense, rich & irresistibly chocolatey',
     startingFrom: '₹550',
@@ -17,7 +18,7 @@ const highlights = [
     id: 'marble-cake_500g',
     img: '/images/cake.png',
     alt: 'Tea Cakes by Batter and Bliss',
-    tag: '☕ Fan Favourite',
+    tag: 'Fan Favourite',
     title: 'Tea Cakes',
     tagline: 'Soft loaf cakes, perfect with chai',
     startingFrom: '₹400',
@@ -27,7 +28,7 @@ const highlights = [
     id: 'nutella-cake-jar_per jar',
     img: '/images/hamper.png',
     alt: 'Cake Jars by Batter and Bliss',
-    tag: '🎁 Perfect Gift',
+    tag: 'Perfect Gift',
     title: 'Cake Jars',
     tagline: 'Layered jars — adorable & delicious',
     startingFrom: '₹250',
@@ -104,9 +105,10 @@ export default function Menu() {
                     <button
                       onClick={() => addToCart(item.id, item.itemData)}
                       className="px-3.5 py-1.5 rounded-full bg-white text-brown-dark font-semibold text-xs
-                                 hover:bg-rose hover:text-white transition-all duration-200 cursor-pointer shadow-sm"
+                                 hover:bg-rose hover:text-white transition-all duration-200 cursor-pointer shadow-sm flex items-center gap-1.5"
                     >
-                      + Add to Basket
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      <span>Add to Basket</span>
                     </button>
                   </div>
                 </div>
@@ -118,7 +120,7 @@ export default function Menu() {
         {/* View full menu CTA */}
         <div className="text-center mt-12" data-anim="fade-up" data-delay="400">
           <p className="text-brown-light text-sm mb-4">
-            Explore 25+ freshly baked items — Tea Cakes, Guilt-Free bakes, Brownies & Cake Jars.
+            Explore 25+ freshly baked items — Tea Cakes, Guilt-Free bakes, Brownies &amp; Cake Jars.
           </p>
           <Link
             to="/menu"
@@ -127,7 +129,8 @@ export default function Menu() {
                        hover:bg-brown-mid hover:-translate-y-0.5
                        transition-all duration-250"
           >
-            Explore Full Menu 📋
+            <span>Explore Full Menu</span>
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 

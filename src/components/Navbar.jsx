@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { getActiveFestival } from '../utils/festivalConfig'
+import { MapPin, Search, MessageCircle, ShoppingBag, ChevronDown, ArrowUpRight, Menu as MenuIcon, X as XIcon } from 'lucide-react'
 
 const DROPDOWN_ITEMS = {
   brownies: [
@@ -140,9 +141,9 @@ export default function Navbar() {
 
             {/* City Selector */}
             <div className="hidden sm:flex items-center gap-1 text-xs text-cream/90 bg-white/10 px-3 py-1.5 rounded-full border border-white/15 cursor-pointer hover:bg-white/20 transition-colors">
-              <span className="text-rose text-sm">📍</span>
+              <MapPin className="w-3.5 h-3.5 text-rose shrink-0" />
               <span className="font-medium">Delivering To: <strong className="text-cream font-bold">Delhi NCR</strong></span>
-              <span className="text-[0.65rem] text-cream/70 ml-0.5">▼</span>
+              <ChevronDown className="w-3 h-3 text-cream/70 ml-0.5" />
             </div>
           </div>
 
@@ -158,7 +159,7 @@ export default function Navbar() {
               placeholder="Search For Brownies, Tea Cakes, Rakhi Hampers..."
               className="w-full pl-9 pr-4 py-2 rounded-lg bg-white text-brown-dark text-xs placeholder-brown-light/60 font-sans focus:outline-none focus:ring-2 focus:ring-rose/40 transition-all shadow-inner"
             />
-            <span className="absolute left-3 top-2.5 text-brown-light/60 text-xs">🔍</span>
+            <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-brown-light/60" />
           </form>
 
           {/* Right Action Icons (WhatsApp & Cart) */}
@@ -171,7 +172,7 @@ export default function Navbar() {
               rel="noreferrer"
               className="flex items-center gap-1.5 text-xs text-cream/90 hover:text-cream font-medium bg-white/10 px-3 py-1.5 rounded-full border border-white/15 transition-colors"
             >
-              <span className="text-sm">💬</span>
+              <MessageCircle className="w-3.5 h-3.5" />
               <span>WhatsApp</span>
             </a>
 
@@ -180,7 +181,7 @@ export default function Navbar() {
               onClick={() => setIsCartOpen(true)}
               className="relative flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose text-white text-xs font-semibold hover:bg-rose/90 shadow-sm transition-all duration-200 cursor-pointer"
             >
-              <span className="text-sm">🛒</span>
+              <ShoppingBag className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Cart</span>
               <span className="bg-brown-dark text-white text-[0.7rem] font-bold px-1.5 py-0.5 rounded-full">
                 {totalItems}
@@ -189,11 +190,11 @@ export default function Navbar() {
 
             {/* Mobile Hamburger */}
             <button
-              className="md:hidden p-1 text-cream text-lg"
+              className="md:hidden p-1 text-cream"
               onClick={() => setMenuOpen(prev => !prev)}
               aria-label="Toggle menu"
             >
-              {menuOpen ? '✕' : '☰'}
+              {menuOpen ? <XIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
             </button>
 
           </div>
@@ -220,7 +221,7 @@ export default function Navbar() {
                     }`}
                 >
                   <span>{item.label}</span>
-                  {hasSubMenu && <span className="text-[0.6rem] text-brown-light/60">▼</span>}
+                  {hasSubMenu && <ChevronDown className="w-3 h-3 text-brown-light/60" />}
                   {item.badge && (
                     <span className="text-[0.6rem] bg-gradient-to-r from-red-600 to-purple-600 text-white font-bold px-1.5 py-0.2 rounded-full uppercase tracking-tighter animate-pulse shadow-xs">
                       {item.badge}
@@ -232,9 +233,9 @@ export default function Navbar() {
                 {/* Bakingo-Style Dropdown Menu Box */}
                 {hasSubMenu && activeDropdown === item.action && (
                   <div className="absolute top-full left-0 mt-1 w-64 bg-cream-light border border-rose/20 rounded-2xl shadow-xl py-2 px-1.5 z-50 animate-stepIn">
-                    <div className="text-[0.65rem] font-bold text-brown-light/70 uppercase tracking-widest px-3 py-1 mb-1 border-b border-rose/10 flex justify-between">
+                    <div className="text-[0.65rem] font-bold text-brown-light/70 uppercase tracking-widest px-3 py-1 mb-1 border-b border-rose/10 flex justify-between items-center">
                       <span>{item.label}</span>
-                      <span className="text-rose font-normal">Explore ↗</span>
+                      <span className="text-rose font-normal flex items-center gap-0.5">Explore <ArrowUpRight className="w-3 h-3" /></span>
                     </div>
 
                     <div className="max-h-72 overflow-y-auto space-y-0.5">
