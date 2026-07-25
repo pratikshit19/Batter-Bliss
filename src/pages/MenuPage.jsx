@@ -16,10 +16,26 @@ export default function MenuPage() {
     return () => window.removeEventListener('menu-data-change', handleMenuChange)
   }, [])
 
-  // Smooth scroll to category section when passed in location state
+  // Smooth scroll to specific item or category section when passed in location state
   useEffect(() => {
+    const itemName = location.state?.itemName
     const catId = location.state?.category
-    if (catId) {
+
+    if (itemName) {
+      const itemId = `item-${itemName.toLowerCase().replace(/\s+/g, '-')}`
+      setTimeout(() => {
+        const el = document.getElementById(itemId)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          el.classList.add('ring-2', 'ring-rose', 'ring-offset-4', 'scale-[1.02]')
+          setTimeout(() => el.classList.remove('ring-2', 'ring-rose', 'ring-offset-4', 'scale-[1.02]'), 2000)
+          return
+        }
+        // Fallback to category if specific item ID not found
+        const catEl = document.getElementById(catId)
+        if (catEl) catEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 200)
+    } else if (catId) {
       setTimeout(() => {
         const el = document.getElementById(catId)
         if (el) {
@@ -86,7 +102,8 @@ export default function MenuPage() {
                 return (
                   <div
                     key={item.name}
-                    className="bg-white rounded-3xl overflow-hidden border border-rose/15 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    id={`item-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="bg-white rounded-3xl overflow-hidden border border-rose/15 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between scroll-mt-36"
                   >
                     <div>
                       {/* Image Header with Aspect Ratio */}

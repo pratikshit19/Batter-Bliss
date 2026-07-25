@@ -83,17 +83,8 @@ export default function Navbar() {
 
   const handleDropdownItemClick = (subItem, categoryKey) => {
     setActiveDropdown(null)
-    if (subItem.name.startsWith('All ')) {
-      navigate('/menu', { state: { category: categoryKey } })
-    } else {
-      const key = `${subItem.name.toLowerCase().replace(/\s+/g, '-')}_${subItem.size}`
-      addToCart(key, {
-        name: `${subItem.name} (${subItem.size})`,
-        price: subItem.price,
-        size: subItem.size,
-        img: subItem.img
-      })
-    }
+    const itemName = subItem.name.startsWith('All ') ? null : subItem.name
+    navigate('/menu', { state: { category: categoryKey, itemName } })
   }
 
   const handleSearchSubmit = (e) => {
@@ -233,8 +224,8 @@ export default function Navbar() {
                 {hasSubMenu && activeDropdown === item.action && (
                   <div className="absolute top-full left-0 mt-1 w-64 bg-cream-light border border-rose/20 rounded-2xl shadow-xl py-2 px-1.5 z-50 animate-stepIn">
                     <div className="text-[0.65rem] font-bold text-brown-light/70 uppercase tracking-widest px-3 py-1 mb-1 border-b border-rose/10 flex justify-between">
-                      <span>{item.label} Menu</span>
-                      <span className="text-rose font-normal">Click to Add 🛒</span>
+                      <span>{item.label}</span>
+                      <span className="text-rose font-normal">Explore ↗</span>
                     </div>
 
                     <div className="max-h-72 overflow-y-auto space-y-0.5">
@@ -245,11 +236,6 @@ export default function Navbar() {
                           className="w-full text-left px-3 py-2 rounded-xl text-xs text-brown-dark font-medium hover:bg-rose/15 hover:text-rose transition-colors flex items-center justify-between group/item cursor-pointer"
                         >
                           <span className="truncate">{subItem.name}</span>
-                          {!subItem.name.startsWith('All ') && (
-                            <span className="text-[0.68rem] font-bold text-brown-mid group-hover/item:text-rose shrink-0 ml-2">
-                              ₹{subItem.price}
-                            </span>
-                          )}
                         </button>
                       ))}
                     </div>
