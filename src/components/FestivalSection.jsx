@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getActiveFestival } from '../utils/festivalConfig'
 import { useCart } from '../context/CartContext'
 
 export default function FestivalSection() {
+  const navigate = useNavigate()
   const [festival, setFestival] = useState(() => getActiveFestival())
   const { addToCart } = useCart()
 
@@ -48,7 +50,8 @@ export default function FestivalSection() {
             return (
               <div
                 key={product.id}
-                className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20 shadow-xl flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5"
+                onClick={() => navigate(`/festive/${product.id}`)}
+                className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20 shadow-xl flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 cursor-pointer group"
               >
                 <div>
                   {/* Badge */}
@@ -60,7 +63,7 @@ export default function FestivalSection() {
                   </div>
 
                   {/* Image */}
-                  <div className="w-full h-44 rounded-2xl overflow-hidden mb-5 border border-white/10 shadow-inner relative group">
+                  <div className="w-full h-44 rounded-2xl overflow-hidden mb-5 border border-white/10 shadow-inner relative">
                     <img
                       src={product.img}
                       alt={product.name}
@@ -69,7 +72,7 @@ export default function FestivalSection() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   </div>
 
-                  <h3 className="font-serif text-xl font-bold text-white mb-2">{product.name}</h3>
+                  <h3 className="font-serif text-xl font-bold text-white mb-2 group-hover:text-amber-300 transition-colors">{product.name}</h3>
                   <p className="text-cream/80 text-xs leading-relaxed mb-6">{product.desc}</p>
                 </div>
 
@@ -77,19 +80,25 @@ export default function FestivalSection() {
                 <div>
                   {product.isCustomWhatsApp ? (
                     <button
-                      onClick={() => handleCustomWhatsApp(product.name)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCustomWhatsApp(product.name)
+                      }}
                       className="w-full py-3 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-white/30"
                     >
                       <span>💬 Custom Order on WhatsApp</span>
                     </button>
                   ) : (
                     <button
-                      onClick={() => addToCart(product.id, {
-                        name: product.name,
-                        price: product.price,
-                        size: product.size,
-                        img: product.img
-                      })}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        addToCart(product.id, {
+                          name: product.name,
+                          price: product.price,
+                          size: product.size,
+                          img: product.img
+                        })
+                      }}
                       className="w-full py-3 rounded-full bg-white text-brown-dark font-bold text-xs shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:bg-cream"
                     >
                       <span>🛒 Add Hamper (₹{product.price})</span>

@@ -49,6 +49,7 @@ function MainSite() {
 }
 
 import ProductDetailPage from './pages/ProductDetailPage'
+import FestiveDetailPage from './pages/FestiveDetailPage'
 
 export default function App() {
   return (
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/"            element={<MainSite />} />
         <Route path="/menu"         element={<MenuPage />} />
         <Route path="/product/:id"  element={<ProductDetailPage />} />
+        <Route path="/festive/:id"  element={<FestiveDetailPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin"       element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       </Routes>
