@@ -168,20 +168,25 @@ function MenuTab() {
       p500: '',
       p1kg: '',
       unit: '',
-      img: '/images/brownies.png'
+      description: '',
+      img: '/images/brownies.png',
+      images: ['/images/brownies.png']
     })
     setShowModal(true)
   }
 
   const handleOpenEdit = (catId, item) => {
     setEditingItem({ catId, itemId: item.id || item.name })
+    const initialImgs = item.images && item.images.length > 0 ? item.images : [item.img || '/images/cake.png']
     setFormData({
       category: catId,
       name: item.name,
       p500: item.p500 || '',
       p1kg: item.p1kg || '',
       unit: item.unit || '',
-      img: item.img || '/images/cake.png'
+      description: item.description || '',
+      img: initialImgs[0],
+      images: initialImgs
     })
     setShowModal(true)
   }
@@ -209,13 +214,17 @@ function MenuTab() {
     e.preventDefault()
     if (!formData.name.trim() || !formData.p500) return
 
+    const galleryImgs = formData.images && formData.images.length > 0 ? formData.images : [formData.img || '/images/cake.png']
+
     const newItemObj = {
       id: formData.name.toLowerCase().replace(/\s+/g, '-'),
       name: formData.name.trim(),
       p500: Number(formData.p500),
       p1kg: formData.p1kg ? Number(formData.p1kg) : null,
-      unit: formData.unit.trim() || null,
-      img: formData.img.trim() || '/images/cake.png'
+      unit: formData.unit ? formData.unit.trim() : null,
+      description: formData.description ? formData.description.trim() : null,
+      img: galleryImgs[0],
+      images: galleryImgs
     }
 
     let updated = [...menuData]
@@ -319,7 +328,7 @@ function MenuTab() {
               <button
                 onClick={() => {
                   setEditingItem(null)
-                  setFormData({ category: cat.id, name: '', p500: '', p1kg: '', unit: '', img: '/images/cake.png' })
+                  setFormData({ category: cat.id, name: '', p500: '', p1kg: '', unit: '', img: '/images/cake.png', images: ['/images/cake.png'] })
                   setShowModal(true)
                 }}
                 className="text-xs font-semibold text-rose hover:underline cursor-pointer"
@@ -476,56 +485,100 @@ function MenuTab() {
 
               <div>
                 <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
-                  Product Image *
+                  Product Description (Optional)
                 </label>
-                <div className="flex items-center gap-3">
-                  {formData.img && (
-                    <img
-                      src={formData.img}
-                      alt="Preview"
-                      className="w-14 h-14 rounded-xl object-cover border border-rose/20 shadow-xs shrink-0"
-                    />
-                  )}
-                  <label className="flex-1 border-2 border-dashed border-rose/30 hover:border-rose rounded-xl p-3 text-center cursor-pointer bg-cream-light/40 hover:bg-rose/5 transition-all">
-                    <span className="text-xs font-semibold text-brown-dark block">
-                      📷 {formData.img ? 'Change Image File' : 'Upload Image File'}
-                    </span>
-                    <span className="text-[0.65rem] text-brown-light block mt-0.5">JPG, PNG, WebP</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files[0]
-                        if (!file) return
+                <textarea
+                  rows={3}
+                  placeholder="Describe the flavors, texture, pure butter ingredients, or serving suggestions..."
+                  value={formData.description || ''}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 bg-white text-brown-dark text-sm focus:outline-none focus:border-rose"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1 flex justify-between">
+                  <span>Product Gallery Images ({formData.images?.length || 0})</span>
+                  <span className="text-[0.65rem] text-rose font-normal uppercase">First image is main thumbnail</span>
+                </label>
+
+                {/* Uploaded Gallery Thumbnails */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {(formData.images || [formData.img]).map((imgUrl, i) => (
+                    <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-rose/20 shadow-xs group shrink-0">
+                      <img src={imgUrl} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentImgs = formData.images || [formData.img]
+                          const updatedImgs = currentImgs.filter((_, index) => index !== i)
+                          const newMain = updatedImgs[0] || '/images/cake.png'
+                          setFormData({ ...formData, images: updatedImgs, img: newMain })
+                        }}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-600 text-white font-bold text-[0.65rem] flex items-center justify-center shadow-md opacity-80 group-hover:opacity-100 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <label className="block border-2 border-dashed border-rose/30 hover:border-rose rounded-xl p-3 text-center cursor-pointer bg-cream-light/40 hover:bg-rose/5 transition-all">
+                  <span className="text-xs font-semibold text-brown-dark block">
+                    📷 + Upload Product Gallery Images
+                  </span>
+                  <span className="text-[0.65rem] text-brown-light block mt-0.5">Upload single or multiple images (JPG, PNG, WebP)</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files)
+                      if (!files.length) return
+
+                      for (const file of files) {
                         try {
                           const ext = file.name.split('.').pop()
-                          const filename = `item-${Date.now()}.${ext}`
+                          const filename = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`
                           const { data, error } = await supabase.storage
                             .from('menu')
                             .upload(filename, file, { cacheControl: '3600', upsert: true })
 
+                          let newUrl = ''
                           if (!error && data?.path) {
                             const { data: { publicUrl } } = supabase.storage.from('menu').getPublicUrl(data.path)
-                            setFormData(prev => ({ ...prev, img: publicUrl }))
+                            newUrl = publicUrl
                           } else {
-                            const reader = new FileReader()
-                            reader.onload = (ev) => {
-                              setFormData(prev => ({ ...prev, img: ev.target.result }))
-                            }
-                            reader.readAsDataURL(file)
+                            newUrl = await new Promise(res => {
+                              const r = new FileReader()
+                              r.onload = ev => res(ev.target.result)
+                              r.readAsDataURL(file)
+                            })
                           }
+
+                          setFormData(prev => {
+                            const currentList = prev.images || (prev.img ? [prev.img] : [])
+                            const updatedList = [...currentList, newUrl]
+                            return { ...prev, images: updatedList, img: updatedList[0] }
+                          })
                         } catch {
-                          const reader = new FileReader()
-                          reader.onload = (ev) => {
-                            setFormData(prev => ({ ...prev, img: ev.target.result }))
-                          }
-                          reader.readAsDataURL(file)
+                          const newUrl = await new Promise(res => {
+                            const r = new FileReader()
+                            r.onload = ev => res(ev.target.result)
+                            r.readAsDataURL(file)
+                          })
+
+                          setFormData(prev => {
+                            const currentList = prev.images || (prev.img ? [prev.img] : [])
+                            const updatedList = [...currentList, newUrl]
+                            return { ...prev, images: updatedList, img: updatedList[0] }
+                          })
                         }
-                      }}
-                    />
-                  </label>
-                </div>
+                      }
+                    }}
+                  />
+                </label>
               </div>
 
               <div className="pt-3 flex gap-3">

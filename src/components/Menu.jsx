@@ -69,8 +69,14 @@ export default function Menu() {
                          hover:-translate-y-2 hover:shadow-[0_18px_50px_rgba(44,26,14,0.2)]
                          transition-all duration-400 flex flex-col justify-between"
             >
-              {/* Image */}
-              <div className="relative w-full aspect-[3/4] overflow-hidden">
+              {/* Image & Title Click Handler */}
+              <div
+                onClick={() => {
+                  const slug = item.id.split('_')[0]
+                  navigate(`/product/${slug}`)
+                }}
+                className="relative w-full aspect-[3/4] overflow-hidden cursor-pointer"
+              >
                 <img
                   src={item.img}
                   alt={item.alt}
@@ -80,12 +86,10 @@ export default function Menu() {
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-brown-dark/85 via-brown-dark/30 to-transparent" />
 
-
-
                 {/* Bottom text & quick add */}
                 <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col gap-2">
                   <div>
-                    <h3 className="font-serif text-xl font-semibold text-white mb-1">
+                    <h3 className="font-serif text-xl font-semibold text-white mb-1 group-hover:text-rose-200 transition-colors">
                       {item.title}
                     </h3>
                     <p className="text-white/75 text-xs leading-snug">

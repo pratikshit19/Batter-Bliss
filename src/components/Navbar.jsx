@@ -67,7 +67,12 @@ export default function Navbar() {
     return () => window.removeEventListener('festival-theme-change', handleThemeChange)
   }, [])
 
-  const handleNavClick = (action) => {
+  const handleNavClick = (action, hasDropdown = false) => {
+    if (hasDropdown) {
+      setActiveDropdown(prev => (prev === action ? null : action))
+      return
+    }
+
     if (action === 'about' || action === 'why-us' || action === 'rakhi') {
       const targetId = action === 'rakhi' ? 'rakhi-special' : action
       if (isMenuPage) {
@@ -83,8 +88,12 @@ export default function Navbar() {
 
   const handleDropdownItemClick = (subItem, categoryKey) => {
     setActiveDropdown(null)
-    const itemName = subItem.name.startsWith('All ') ? null : subItem.name
-    navigate('/menu', { state: { category: categoryKey, itemName } })
+    if (subItem.name.startsWith('All ')) {
+      navigate('/menu', { state: { category: categoryKey } })
+    } else {
+      const slug = subItem.name.toLowerCase().replace(/\s+/g, '-')
+      navigate(`/product/${slug}`)
+    }
   }
 
   const handleSearchSubmit = (e) => {
@@ -206,7 +215,7 @@ export default function Navbar() {
                 onMouseLeave={() => hasSubMenu && setActiveDropdown(null)}
               >
                 <button
-                  onClick={() => handleNavClick(item.action)}
+                  onClick={() => handleNavClick(item.action, hasSubMenu)}
                   className={`font-medium transition-colors py-1 relative cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${isRakhi ? 'text-purple-900 font-bold' : 'text-brown-dark hover:text-rose'
                     }`}
                 >

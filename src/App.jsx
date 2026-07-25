@@ -48,12 +48,15 @@ function MainSite() {
   )
 }
 
+import ProductDetailPage from './pages/ProductDetailPage'
+
 export default function App() {
   return (
     <CartProvider>
       <Routes>
         <Route path="/"            element={<MainSite />} />
         <Route path="/menu"         element={<MenuPage />} />
+        <Route path="/product/:id"  element={<ProductDetailPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin"       element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       </Routes>

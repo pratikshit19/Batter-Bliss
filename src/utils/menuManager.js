@@ -105,3 +105,20 @@ export async function saveMenuItems(menuData) {
     console.error('Failed to save menu data:', e)
   }
 }
+
+export function findProductById(id) {
+  const allData = getStoredMenuItems()
+  const cleanId = id ? id.toLowerCase().trim() : ''
+
+  for (const cat of allData) {
+    for (const item of cat.items) {
+      const itemId = item.id || item.name.toLowerCase().replace(/\s+/g, '-')
+      if (itemId === cleanId || item.name.toLowerCase().replace(/\s+/g, '-') === cleanId) {
+        return { ...item, categoryId: cat.id, categoryName: cat.category, emoji: cat.emoji }
+      }
+    }
+  }
+  const firstCat = allData[0]
+  const firstItem = firstCat.items[0]
+  return { ...firstItem, categoryId: firstCat.id, categoryName: firstCat.category, emoji: firstCat.emoji }
+}

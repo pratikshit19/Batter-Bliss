@@ -105,13 +105,19 @@ export default function MenuPage() {
                     id={`item-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="bg-white rounded-3xl overflow-hidden border border-rose/15 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between scroll-mt-36"
                   >
-                    <div>
+                    <div
+                      onClick={() => {
+                        const slug = item.id || item.name.toLowerCase().replace(/\s+/g, '-')
+                        navigate(`/product/${slug}`)
+                      }}
+                      className="cursor-pointer group/card"
+                    >
                       {/* Image Header with Aspect Ratio */}
                       <div className="w-full h-52 relative overflow-hidden bg-cream-light/40">
                         <img
                           src={imgSrc}
                           alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-brown-dark/30 via-transparent to-transparent opacity-60" />
 
@@ -127,11 +133,11 @@ export default function MenuPage() {
 
                       {/* Content Info */}
                       <div className="p-5">
-                        <h3 className="font-serif text-xl font-bold text-brown-dark mb-1 leading-snug">
+                        <h3 className="font-serif text-xl font-bold text-brown-dark mb-1 leading-snug group-hover/card:text-rose transition-colors">
                           {item.name}
                         </h3>
-                        <p className="text-xs text-brown-light/80 leading-relaxed font-sans mb-4">
-                          Handcrafted with pure butter &amp; rich Belgian chocolate. Freshly baked to order.
+                        <p className="text-xs text-brown-light/80 leading-relaxed font-sans mb-4 line-clamp-2">
+                          {item.description || 'Handcrafted with pure butter & rich Belgian chocolate. Freshly baked to order.'}
                         </p>
                       </div>
                     </div>
