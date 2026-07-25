@@ -56,13 +56,6 @@ export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const { addToCart, setIsCartOpen } = useCart()
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % SLIDES.length)
-    }, 2000)
-    return () => clearInterval(timer)
-  }, [])
-
   const slide = SLIDES[currentSlide]
 
   const handleAction = (type) => {
