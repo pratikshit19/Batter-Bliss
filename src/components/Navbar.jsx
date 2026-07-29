@@ -220,7 +220,7 @@ export default function Navbar() {
                   className={`font-medium transition-colors py-1 relative cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${isRakhi ? 'text-purple-900 font-bold' : 'text-brown-dark hover:text-rose'
                     }`}
                 >
-                  <span>{item.label}</span>
+                  <span>{isRakhi ? `${festival?.name || 'Festive'} Special` : item.label}</span>
                   {hasSubMenu && <ChevronDown className="w-3 h-3 text-brown-light/60" />}
                   {item.badge && (
                     <span className="text-[0.6rem] bg-gradient-to-r from-red-600 to-purple-600 text-white font-bold px-1.5 py-0.2 rounded-full uppercase tracking-tighter animate-pulse shadow-xs">

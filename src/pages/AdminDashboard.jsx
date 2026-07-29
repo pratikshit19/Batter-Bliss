@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getSavedThemeSetting, setTestFestivalTheme } from '../utils/festivalConfig'
 import { getStoredMenuItems, saveMenuItems } from '../utils/menuManager'
+import { getScheduledLaunches, saveScheduledLaunches, deleteScheduledLaunch, getLaunchState } from '../utils/launchManager'
+import { Package, Utensils, Rocket, Palette, Plus, Pencil, Trash2, Clock, Calendar, CheckCircle2, Upload } from 'lucide-react'
 
 /* ── Status config ──────────────────────────────────────────────── */
 const STATUSES = [
@@ -23,131 +25,266 @@ const fmt = d => {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })
 }
 const fmtTime = d => {
-  if (!d) return ''
-  return new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  if (!d) return '—'
+  return new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
 }
-const fmtCurrency = n => n ? `₹${Number(n).toLocaleString('en-IN')}` : '—'
 
-/* ═══════════════════════════════════════════════════════════════════
-   ORDERS TAB
-═══════════════════════════════════════════════════════════════════ */
-function OrdersTab({ orders, loading, fetchOrders }) {
-  const [activeFilter, setActiveFilter] = useState('all')
-  const [expandedId, setExpandedId] = useState(null)
-  const [updatingId, setUpdatingId] = useState(null)
+function StatusDropdown({ currentStatus, onStatusChange }) {
+  const [open, setOpen] = useState(false)
+  const [coords, setCoords] = useState({ top: 0, left: 0 })
+  const btnRef = useRef(null)
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    setUpdatingId(orderId)
-    await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
-    await fetchOrders()
-    setUpdatingId(null)
+  const toggle = (e) => {
+    e.stopPropagation()
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setCoords({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+      })
+    }
+    setOpen(prev => !prev)
   }
 
-  const visible = activeFilter === 'all'
-    ? orders
-    : orders.filter(o => o.status === activeFilter)
+  useEffect(() => {
+    const handleClose = () => setOpen(false)
+    if (open) window.addEventListener('click', handleClose)
+    return () => window.removeEventListener('click', handleClose)
+  }, [open])
+
+  const cur = STATUS_MAP[currentStatus] || { label: currentStatus, color: 'bg-gray-100 text-gray-800 border-gray-200' }
 
   return (
-    <div className="space-y-6">
-      {/* Filter bar */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
-        {FILTER_TABS.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveFilter(tab.value)}
-            className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeFilter === tab.value
-                ? 'bg-brown-dark text-cream-light shadow-md'
-                : 'bg-white border border-rose/20 text-brown-mid hover:bg-rose/5'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div className="relative inline-block" onClick={e => e.stopPropagation()}>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={toggle}
+        className={`px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1 cursor-pointer transition-all duration-150 ${cur.color}`}
+      >
+        <span>{cur.label}</span>
+        <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
-      {loading ? (
-        <div className="py-12 text-center text-brown-light text-sm">Loading orders…</div>
-      ) : visible.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-rose/12 text-brown-light text-sm">
-          No orders found for this status.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {visible.map(order => {
-            const st = STATUS_MAP[order.status] || STATUSES[0]
-            const isExpanded = expandedId === order.id
-
-            return (
-              <div
-                key={order.id}
-                className="bg-white rounded-2xl border border-rose/12 shadow-xs hover:shadow-sm transition-all overflow-hidden"
-              >
-                <div
-                  onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-cream-light border border-rose/20 flex items-center justify-center font-bold text-brown-dark text-xs shrink-0">
-                      #{order.id.slice(0, 4)}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-brown-dark text-sm">{order.customer_name || 'Customer'}</h4>
-                      <p className="text-xs text-brown-light">{order.phone} · {order.address || 'Delhi NCR'}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 justify-between sm:justify-end">
-                    <div className="text-right">
-                      <p className="font-bold text-brown-dark text-sm">{fmtCurrency(order.total_amount)}</p>
-                      <p className="text-[0.68rem] text-brown-light/60">{fmt(order.created_at)}</p>
-                    </div>
-
-                    <select
-                      value={order.status}
-                      disabled={updatingId === order.id}
-                      onClick={e => e.stopPropagation()}
-                      onChange={e => handleStatusChange(order.id, e.target.value)}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${st.color} cursor-pointer focus:outline-none`}
-                    >
-                      {STATUSES.map(s => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {isExpanded && (
-                  <div className="px-5 pb-5 pt-2 border-t border-rose/10 bg-cream-light/30 text-xs space-y-3">
-                    <div>
-                      <p className="font-semibold text-brown-light uppercase tracking-widest text-[0.65rem] mb-1">Items Ordered</p>
-                      <p className="text-brown-dark font-medium">{order.product}</p>
-                    </div>
-                    {order.notes && (
-                      <div>
-                        <p className="font-semibold text-brown-light uppercase tracking-widest text-[0.65rem] mb-1">Special Notes</p>
-                        <p className="text-brown-dark italic">"{order.notes}"</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+      {open && createPortal(
+        <div
+          style={{ top: coords.top, left: coords.left }}
+          className="fixed z-50 bg-white rounded-xl shadow-xl border border-brown/10 py-1.5 min-w-[160px] animate-fadeIn"
+          onClick={e => e.stopPropagation()}
+        >
+          {STATUSES.map(s => (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => {
+                onStatusChange(s.value)
+                setOpen(false)
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-cream/60 flex items-center justify-between cursor-pointer transition-colors ${
+                currentStatus === s.value ? 'text-brown-dark font-bold bg-cream/40' : 'text-brown-mid'
+              }`}
+            >
+              <span>{s.label}</span>
+              {currentStatus === s.value && <span className="text-brown-dark font-bold">✓</span>}
+            </button>
+          ))}
+        </div>,
+        document.body
       )}
     </div>
   )
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   INTERACTIVE MENU MANAGEMENT TAB
+   ORDERS TAB
+═══════════════════════════════════════════════════════════════════ */
+function OrdersTab({ orders, loading, fetchOrders }) {
+  const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [updatingId, setUpdatingId] = useState(null)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const handleStatusChange = async (orderId, newStatus) => {
+    setUpdatingId(orderId)
+    setErrorMsg('')
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('id', orderId)
+
+    if (error) {
+      setErrorMsg(`Failed to update order #${orderId.slice(0, 8)}: ${error.message}`)
+    } else {
+      await fetchOrders()
+    }
+    setUpdatingId(null)
+  }
+
+  const filteredOrders = orders.filter(o => {
+    const matchFilter = filter === 'all' || o.status === filter
+    const q = search.toLowerCase().trim()
+    if (!q) return matchFilter
+    const name  = (o.customer_name || '').toLowerCase()
+    const phone = (o.phone || '').toLowerCase()
+    const city  = (o.city || '').toLowerCase()
+    const id    = (o.id || '').toLowerCase()
+    const itemsStr = Array.isArray(o.items)
+      ? o.items.map(i => i.name).join(' ').toLowerCase()
+      : ''
+    const matchSearch = name.includes(q) || phone.includes(q) || city.includes(q) || id.includes(q) || itemsStr.includes(q)
+    return matchFilter && matchSearch
+  })
+
+  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0)
+  const deliveredCount = orders.filter(o => o.status === 'delivered').length
+
+  return (
+    <div className="space-y-6">
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-rose/12 shadow-[0_2px_12px_rgba(44,26,14,0.05)]">
+          <p className="text-[0.68rem] font-bold uppercase tracking-wider text-brown-light mb-1">Total Orders</p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-brown-dark">{loading ? '—' : orders.length}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-amber-200/60 shadow-[0_2px_12px_rgba(44,26,14,0.05)] bg-amber-50/20">
+          <p className="text-[0.68rem] font-bold uppercase tracking-wider text-amber-700 mb-1">Pending Orders</p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-amber-800">
+            {loading ? '—' : orders.filter(o => o.status === 'pending').length}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-green-200/60 shadow-[0_2px_12px_rgba(44,26,14,0.05)] bg-green-50/20">
+          <p className="text-[0.68rem] font-bold uppercase tracking-wider text-green-700 mb-1">Delivered</p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-green-800">{loading ? '—' : deliveredCount}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-rose/12 shadow-[0_2px_12px_rgba(44,26,14,0.05)]">
+          <p className="text-[0.68rem] font-bold uppercase tracking-wider text-brown-light mb-1">Total Revenue</p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-brown-dark">
+            {loading ? '—' : `₹${totalRevenue.toLocaleString('en-IN')}`}
+          </p>
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium">
+          {errorMsg}
+        </div>
+      )}
+
+      {/* Controls Bar */}
+      <div className="bg-white rounded-2xl p-4 border border-rose/12 shadow-[0_2px_12px_rgba(44,26,14,0.05)] flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          {FILTER_TABS.map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setFilter(tab.value)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                filter === tab.value
+                  ? 'bg-brown-dark text-cream-light shadow-xs'
+                  : 'bg-rose/8 text-brown-mid hover:bg-rose/15'
+              }`}
+            >
+              {tab.label}
+              {tab.value !== 'all' && (
+                <span className="ml-1 opacity-70">
+                  ({orders.filter(o => o.status === tab.value).length})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative min-w-[220px]">
+          <input
+            type="text"
+            placeholder="Search orders..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 bg-cream/40 border border-rose/20 rounded-full text-xs text-brown-dark placeholder-brown-light/60 focus:outline-none focus:border-rose"
+          />
+          <svg className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-brown-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Orders Table */}
+      <div className="bg-white rounded-2xl border border-rose/12 shadow-[0_2px_12px_rgba(44,26,14,0.05)] overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-brown-light text-sm font-medium">Loading orders...</div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="p-12 text-center text-brown-light text-sm font-medium">No orders found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-cream/40 border-b border-rose/10 text-brown-mid font-serif font-bold text-[0.72rem] uppercase tracking-wider">
+                  <th className="py-3 px-4">Order ID &amp; Date</th>
+                  <th className="py-3 px-4">Customer Details</th>
+                  <th className="py-3 px-4">Items</th>
+                  <th className="py-3 px-4">Total</th>
+                  <th className="py-3 px-4">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-rose/8">
+                {filteredOrders.map(order => (
+                  <tr key={order.id} className="hover:bg-cream/20 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div className="font-mono font-bold text-brown-dark text-[0.75rem]">#{order.id.slice(0, 8)}</div>
+                      <div className="text-[0.68rem] text-brown-light font-medium">{fmt(order.created_at)} at {fmtTime(order.created_at)}</div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="font-bold text-brown-dark">{order.customer_name || 'Anonymous'}</div>
+                      <div className="text-[0.68rem] text-brown-mid font-medium">{order.phone}</div>
+                      <div className="text-[0.65rem] text-brown-light truncate max-w-[180px]">{order.address}, {order.city}</div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="space-y-1">
+                        {Array.isArray(order.items) && order.items.map((item, idx) => (
+                          <div key={idx} className="text-brown-dark text-[0.72rem] flex items-center justify-between gap-2">
+                            <span><strong className="font-semibold">{item.qty || 1}x</strong> {item.name} ({item.size})</span>
+                            <span className="font-mono text-brown-mid">₹{(item.price || 0) * (item.qty || 1)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 font-serif font-bold text-brown-dark text-sm whitespace-nowrap">
+                      ₹{order.total_amount}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      {updatingId === order.id ? (
+                        <span className="text-[0.68rem] text-brown-light font-medium animate-pulse">Updating...</span>
+                      ) : (
+                        <StatusDropdown
+                          currentStatus={order.status || 'pending'}
+                          onStatusChange={newStatus => handleStatusChange(order.id, newStatus)}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MENU MANAGEMENT TAB
 ═══════════════════════════════════════════════════════════════════ */
 function MenuTab() {
   const [menuData, setMenuData] = useState(() => getStoredMenuItems())
-  const [activeCategory, setActiveCategory] = useState('all')
-  const [showModal, setShowModal] = useState(false)
+  const [selectedCatFilter, setSelectedCatFilter] = useState('all')
   const [editingItem, setEditingItem] = useState(null)
+  const [showModal, setShowModal] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [newCatNote, setNewCatNote] = useState('')
+  const [success, setSuccess] = useState('')
 
   const [formData, setFormData] = useState({
     category: 'brownies',
@@ -155,28 +292,29 @@ function MenuTab() {
     p500: '',
     p1kg: '',
     unit: '',
-    img: '/images/brownies.png'
+    description: '',
+    img: '/images/cake.png',
+    images: ['/images/cake.png']
   })
 
-  const [success, setSuccess] = useState('')
-
-  const handleOpenAdd = () => {
+  const openNewItemModal = () => {
     setEditingItem(null)
+    const firstCatId = menuData[0]?.id || 'brownies'
     setFormData({
-      category: 'brownies',
+      category: firstCatId,
       name: '',
       p500: '',
       p1kg: '',
       unit: '',
       description: '',
-      img: '/images/brownies.png',
-      images: ['/images/brownies.png']
+      img: '/images/cake.png',
+      images: ['/images/cake.png']
     })
     setShowModal(true)
   }
 
-  const handleOpenEdit = (catId, item) => {
-    setEditingItem({ catId, itemId: item.id || item.name })
+  const openEditItemModal = (catId, item) => {
+    setEditingItem({ catId, itemId: item.id })
     const initialImgs = item.images && item.images.length > 0 ? item.images : [item.img || '/images/cake.png']
     setFormData({
       category: catId,
@@ -189,6 +327,36 @@ function MenuTab() {
       images: initialImgs
     })
     setShowModal(true)
+  }
+
+  const handleSaveCategory = (e) => {
+    e.preventDefault()
+    if (!newCatName.trim()) return
+
+    const catId = newCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    const existing = menuData.find(c => c.id === catId || (c.category && c.category.toLowerCase() === newCatName.trim().toLowerCase()))
+
+    if (existing) {
+      alert(`Category "${newCatName.trim()}" already exists!`)
+      return
+    }
+
+    const newCatObj = {
+      id: catId,
+      category: newCatName.trim(),
+      note: newCatNote.trim() || 'Custom bakery creations',
+      items: []
+    }
+
+    const updated = [...menuData, newCatObj]
+    setMenuData(updated)
+    saveMenuItems(updated)
+    setShowCategoryModal(false)
+    setNewCatName('')
+    setNewCatNote('')
+    setFormData(prev => ({ ...prev, category: catId }))
+    setSuccess(`Added new category "${newCatObj.category}"!`)
+    setTimeout(() => setSuccess(''), 3000)
   }
 
   const handleDeleteItem = (catId, itemName) => {
@@ -258,128 +426,123 @@ function MenuTab() {
     setTimeout(() => setSuccess(''), 3000)
   }
 
-  const categories = [
-    { id: 'all', label: 'All Items 🍽️' },
-    { id: 'brownies', label: 'Brownies 🍫' },
-    { id: 'tea-cakes', label: 'Tea Cakes ☕' },
-    { id: 'guilt-free', label: 'Guilt-Free 🌿' },
-    { id: 'cake-jars', label: 'Cake Jars 🍯' },
-  ]
-
-  const displayCategories = activeCategory === 'all'
+  const totalItemCount = menuData.reduce((acc, cat) => acc + cat.items.length, 0)
+  const visibleCategories = selectedCatFilter === 'all'
     ? menuData
-    : menuData.filter(c => c.id === activeCategory)
+    : menuData.filter(cat => cat.id === selectedCatFilter)
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-3xl p-6 border border-rose/12 shadow-[0_4px_32px_rgba(44,26,14,0.08)]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-rose/12 shadow-[0_4px_24px_rgba(44,26,14,0.06)]">
         <div>
-          <span className="text-[0.68rem] font-bold text-rose uppercase tracking-widest">Interactive Menu Editor</span>
-          <h2 className="font-serif text-2xl font-bold text-brown-dark">Menu Item Management 🍽️</h2>
-          <p className="text-xs text-brown-light mt-1">
-            Add, edit or delete menu items. Any change updates the live website menu and dropdowns instantly.
-          </p>
+          <span className="text-[0.68rem] font-bold text-rose uppercase tracking-widest">Bakery Inventory</span>
+          <h2 className="font-serif text-2xl font-bold text-brown-dark">Menu Item Management</h2>
+          <p className="text-xs text-brown-light mt-1">Add, edit, update prices, or remove bakery products live on the website menu.</p>
         </div>
 
         <button
-          onClick={handleOpenAdd}
-          className="px-5 py-3 rounded-full bg-brown-dark text-cream-light font-medium text-xs shadow-md hover:bg-brown-mid transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+          onClick={openNewItemModal}
+          className="px-5 py-2.5 rounded-2xl bg-brown-dark text-cream font-bold text-xs shadow-md hover:bg-brown-mid transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
         >
-          <span>+ Add New Bake Item</span>
+          <Plus className="w-4 h-4 text-cream" />
+          <span>Add New Menu Item</span>
+        </button>
+      </div>
+
+      {/* Category Filter Bar */}
+      <div className="bg-white p-3.5 rounded-2xl border border-rose/12 shadow-xs flex items-center gap-2 overflow-x-auto">
+        <button
+          onClick={() => setSelectedCatFilter('all')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            selectedCatFilter === 'all'
+              ? 'bg-brown-dark text-cream shadow-md'
+              : 'bg-rose/8 text-brown-mid hover:bg-rose/15'
+          }`}
+        >
+          All Categories ({totalItemCount})
+        </button>
+        {menuData.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCatFilter(cat.id)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              selectedCatFilter === cat.id
+                ? 'bg-brown-dark text-cream shadow-md'
+                : 'bg-rose/8 text-brown-mid hover:bg-rose/15'
+            }`}
+          >
+            {cat.category || cat.title || cat.id} ({cat.items.length})
+          </button>
+        ))}
+
+        <button
+          onClick={() => setShowCategoryModal(true)}
+          className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300 transition-all shrink-0 cursor-pointer flex items-center gap-1 ml-auto"
+        >
+          <Plus className="w-3.5 h-3.5 text-amber-900" />
+          <span>Add New Category</span>
         </button>
       </div>
 
       {success && (
-        <div className="p-3.5 bg-green-100 border border-green-300 text-green-800 rounded-2xl text-xs font-semibold animate-stepIn flex items-center justify-between">
-          <span>✓ {success}</span>
-          <span className="text-[0.65rem] opacity-75">Live Site Updated</span>
+        <div className="p-3 bg-green-100 border border-green-300 text-green-800 rounded-xl text-xs font-semibold animate-stepIn">
+          ✓ {success}
         </div>
       )}
 
-      {/* Category Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
-        {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
-              activeCategory === cat.id
-                ? 'bg-brown-dark text-cream-light shadow-md'
-                : 'bg-white border border-rose/20 text-brown-mid hover:bg-rose/5'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Categories & Items List */}
       <div className="space-y-8">
-        {displayCategories.map(cat => (
-          <div key={cat.id} className="bg-white rounded-3xl p-6 border border-rose/12 shadow-[0_4px_32px_rgba(44,26,14,0.08)]">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-rose/10">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{cat.emoji}</span>
-                <h3 className="font-serif text-lg font-bold text-brown-dark">{cat.category}</h3>
-                <span className="text-xs text-brown-light/60">({cat.items.length} items)</span>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingItem(null)
-                  setFormData({ category: cat.id, name: '', p500: '', p1kg: '', unit: '', img: '/images/cake.png', images: ['/images/cake.png'] })
-                  setShowModal(true)
-                }}
-                className="text-xs font-semibold text-rose hover:underline cursor-pointer"
-              >
-                + Add to {cat.category}
-              </button>
+        {visibleCategories.map(category => (
+          <div key={category.id} className="bg-white rounded-3xl p-6 border border-rose/12 shadow-[0_2px_16px_rgba(44,26,14,0.04)] space-y-4">
+            <div className="flex items-center justify-between border-b border-rose/10 pb-3">
+              <h3 className="font-serif text-xl font-bold text-brown-dark flex items-center gap-2">
+                <span>{category.category || category.title || category.id}</span>
+                <span className="text-xs font-normal text-brown-light">({category.items.length} items)</span>
+              </h3>
             </div>
 
-            {/* Items Table */}
-            <div className="divide-y divide-rose/8">
-              {cat.items.map(item => (
-                <div key={item.name} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-rose/5 px-3 rounded-2xl transition-colors">
-                  <div className="flex items-center gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {category.items.map(item => (
+                <div key={item.id} className="p-4 rounded-2xl border border-rose/15 bg-cream/20 flex flex-col justify-between space-y-3 group hover:border-rose/40 transition-all">
+                  <div className="flex gap-3">
                     <img
                       src={item.img || '/images/cake.png'}
                       alt={item.name}
-                      className="w-12 h-12 rounded-xl object-cover border border-rose/15 shrink-0"
+                      className="w-16 h-16 rounded-xl object-cover border border-rose/20 shrink-0"
                     />
-                    <div>
-                      <h4 className="font-semibold text-brown-dark text-sm">{item.name}</h4>
-                      {item.unit && <span className="text-[0.68rem] text-rose font-medium">{item.unit}</span>}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-brown-dark text-xs truncate" title={item.name}>{item.name}</h4>
+                      <p className="text-[0.65rem] text-brown-light line-clamp-2 mt-0.5">{item.description || 'Pure butter artisan bake'}</p>
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-bold text-rose">
+                          ₹{item.p500} {item.unit ? `(${item.unit})` : '(500g)'}
+                        </span>
+                        {item.p1kg && (
+                          <span className="text-[0.68rem] font-semibold text-brown-mid">
+                            · ₹{item.p1kg} (1kg)
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Price info & Controls */}
-                  <div className="flex items-center gap-4 justify-between sm:justify-end">
-                    <div className="text-right text-xs">
-                      <div className="font-bold text-brown-dark">
-                        ₹{item.p500} <span className="text-[0.65rem] font-normal text-brown-light">(500g/unit)</span>
-                      </div>
-                      {item.p1kg && (
-                        <div className="text-brown-mid font-medium text-[0.72rem]">
-                          ₹{item.p1kg} <span className="text-[0.62rem] font-normal text-brown-light">(1kg)</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEdit(cat.id, item)}
-                        className="px-3 py-1.5 rounded-lg bg-rose/10 text-brown-dark text-xs font-medium hover:bg-rose hover:text-white transition-colors cursor-pointer"
-                      >
-                        Edit ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(cat.id, item.name)}
-                        className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors cursor-pointer"
-                      >
-                        Delete 🗑️
-                      </button>
-                    </div>
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-rose/10">
+                    <button
+                      onClick={() => openEditItemModal(category.id, item)}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-rose/20 text-brown-dark font-bold text-[0.68rem] hover:bg-rose/10 transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Pencil className="w-3 h-3 text-brown-dark" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(category.id, item.name)}
+                      className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold text-[0.68rem] hover:bg-red-100 transition-all cursor-pointer flex items-center gap-1 border border-red-200"
+                    >
+                      <Trash2 className="w-3 h-3 text-red-600" />
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -388,43 +551,47 @@ function MenuTab() {
         ))}
       </div>
 
-      {/* Add / Edit Modal (Portalled to document.body to escape CSS transform stacking context) */}
       {showModal && createPortal(
-        <div
-          onClick={() => setShowModal(false)}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-brown-dark/60 backdrop-blur-md cursor-pointer"
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-stepIn cursor-default border border-rose/15"
-          >
-            <div className="flex items-center justify-between border-b border-rose/15 pb-4">
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-rose/20 flex flex-col max-h-[88vh] my-auto">
+            
+            <div className="flex items-center justify-between border-b border-rose/10 pb-3 shrink-0">
               <h3 className="font-serif text-xl font-bold text-brown-dark">
-                {editingItem ? 'Edit Menu Item' : 'Add New Bake Item'}
+                {editingItem ? 'Edit Product Item' : 'Add New Product Item'}
               </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-full bg-cream text-brown-dark font-bold text-sm hover:bg-rose/20 transition-colors cursor-pointer flex items-center justify-center"
-              >
-                ✕
-              </button>
+              <button onClick={() => setShowModal(false)} className="text-brown-light hover:text-brown-dark font-bold text-lg cursor-pointer">✕</button>
             </div>
 
-            <form onSubmit={handleSaveItem} className="space-y-4 text-xs">
+            <form id="menu-item-form" onSubmit={handleSaveItem} className="flex-1 overflow-y-auto py-4 space-y-4 text-xs pr-1">
               <div>
-                <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1">
-                  Category *
+                <label className="block font-semibold text-brown-mid uppercase tracking-widest mb-1 flex justify-between">
+                  <span>Category *</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(true)}
+                    className="text-rose font-bold text-[0.65rem] hover:underline cursor-pointer uppercase"
+                  >
+                    + Add New Category
+                  </button>
                 </label>
                 <select
                   value={formData.category}
                   disabled={!!editingItem}
-                  onChange={e => setFormData({ ...formData, category: e.target.value })}
+                  onChange={e => {
+                    if (e.target.value === 'ADD_NEW_CATEGORY') {
+                      setShowCategoryModal(true)
+                    } else {
+                      setFormData({ ...formData, category: e.target.value })
+                    }
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 bg-white text-brown-dark text-sm focus:outline-none focus:border-rose"
                 >
-                  <option value="brownies">Brownies 🍫</option>
-                  <option value="tea-cakes">Tea Cakes ☕</option>
-                  <option value="guilt-free">Guilt-Free Bakes 🌿</option>
-                  <option value="cake-jars">Cake Jars 🍯</option>
+                  {menuData.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.category || cat.title || cat.id}
+                    </option>
+                  ))}
+                  <option value="ADD_NEW_CATEGORY" className="font-bold text-rose">+ Create New Category...</option>
                 </select>
               </div>
 
@@ -523,80 +690,584 @@ function MenuTab() {
                   ))}
                 </div>
 
-                <label className="block border-2 border-dashed border-rose/30 hover:border-rose rounded-xl p-3 text-center cursor-pointer bg-cream-light/40 hover:bg-rose/5 transition-all">
-                  <span className="text-xs font-semibold text-brown-dark block">
-                    📷 + Upload Product Gallery Images
-                  </span>
-                  <span className="text-[0.65rem] text-brown-light block mt-0.5">Upload single or multiple images (JPG, PNG, WebP)</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files)
-                      if (!files.length) return
-
-                      for (const file of files) {
-                        try {
-                          const ext = file.name.split('.').pop()
-                          const filename = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`
-                          const { data, error } = await supabase.storage
-                            .from('menu')
-                            .upload(filename, file, { cacheControl: '3600', upsert: true })
-
-                          let newUrl = ''
-                          if (!error && data?.path) {
-                            const { data: { publicUrl } } = supabase.storage.from('menu').getPublicUrl(data.path)
-                            newUrl = publicUrl
-                          } else {
-                            newUrl = await new Promise(res => {
-                              const r = new FileReader()
-                              r.onload = ev => res(ev.target.result)
-                              r.readAsDataURL(file)
-                            })
-                          }
-
-                          setFormData(prev => {
-                            const currentList = prev.images || (prev.img ? [prev.img] : [])
-                            const updatedList = [...currentList, newUrl]
-                            return { ...prev, images: updatedList, img: updatedList[0] }
-                          })
-                        } catch {
-                          const newUrl = await new Promise(res => {
-                            const r = new FileReader()
-                            r.onload = ev => res(ev.target.result)
-                            r.readAsDataURL(file)
-                          })
-
-                          setFormData(prev => {
-                            const currentList = prev.images || (prev.img ? [prev.img] : [])
-                            const updatedList = [...currentList, newUrl]
-                            return { ...prev, images: updatedList, img: updatedList[0] }
-                          })
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      id="new-img-url"
+                      placeholder="Add Image URL (e.g. /images/brownies.png)"
+                      className="flex-1 px-3 py-2 rounded-xl border border-rose/25 text-xs text-brown-dark"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = document.getElementById('new-img-url')
+                        if (input && input.value.trim()) {
+                          const newImgs = [...(formData.images || [formData.img]), input.value.trim()]
+                          setFormData({ ...formData, images: newImgs, img: newImgs[0] })
+                          input.value = ''
                         }
-                      }
-                    }}
-                  />
-                </label>
+                      }}
+                      className="px-3 py-2 rounded-xl bg-brown-dark text-cream font-bold text-xs hover:bg-brown-mid"
+                    >
+                      + Add URL
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 px-3.5 py-2 rounded-xl border border-rose/25 bg-cream/30 text-brown-mid text-xs font-semibold cursor-pointer hover:bg-cream/60 transition-colors text-center">
+                      <span>Upload Local File</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            const reader = new FileReader()
+                            reader.onloadend = () => {
+                              const newImgs = [...(formData.images || [formData.img]), reader.result]
+                              setFormData({ ...formData, images: newImgs, img: newImgs[0] })
+                            }
+                            reader.readAsDataURL(file)
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-rose/10 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                form="menu-item-form"
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-brown-dark text-cream font-bold hover:bg-brown-mid shadow-md cursor-pointer"
+              >
+                {editingItem ? 'Save Changes' : 'Add Item'}
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showCategoryModal && createPortal(
+        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-rose/20 flex flex-col my-auto space-y-4">
+            <div className="flex items-center justify-between border-b border-rose/10 pb-3">
+              <h3 className="font-serif text-xl font-bold text-brown-dark flex items-center gap-2">
+                <span>Add New Category</span>
+                <Plus className="w-4 h-4 text-rose" />
+              </h3>
+              <button onClick={() => setShowCategoryModal(false)} className="text-brown-light hover:text-brown-dark font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Pies & Tarts, Macarons, Cookies"
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                />
               </div>
 
-              <div className="pt-3 flex gap-3">
+              <div>
+                <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Note / Subtitle (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Priced per box, or Available in 500g & 1kg"
+                  value={newCatNote}
+                  onChange={e => setNewCatNote(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-rose/10">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-3 rounded-full border border-brown-dark/20 text-brown-dark font-medium text-xs hover:bg-cream transition-colors cursor-pointer"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-full bg-brown-dark text-cream-light font-bold text-xs shadow-md hover:bg-brown-mid transition-all cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-brown-dark text-cream font-bold hover:bg-brown-mid shadow-md cursor-pointer"
                 >
-                  {editingItem ? 'Save Changes' : 'Add Item'}
+                  Create Category
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCHEDULED LAUNCHES MANAGEMENT TAB
+═══════════════════════════════════════════════════════════════════ */
+function LaunchesTab() {
+  const [launches, setLaunches] = useState(() => getScheduledLaunches())
+  const [menuCategories, setMenuCategories] = useState(() => getStoredMenuItems())
+  const [selectedCatFilter, setSelectedCatFilter] = useState('all')
+  const [showModal, setShowModal] = useState(false)
+  const [editingLaunch, setEditingLaunch] = useState(null)
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    const handleMenuChange = () => setMenuCategories(getStoredMenuItems())
+    window.addEventListener('menu-data-change', handleMenuChange)
+    return () => window.removeEventListener('menu-data-change', handleMenuChange)
+  }, [])
+
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'brownies',
+    p500: '',
+    p1kg: '',
+    unit: '',
+    description: '',
+    img: '/images/hamper.png',
+    comingSoonDate: '',
+    launchDate: '',
+    showCountdownTimer: true,
+    whatsappMessage: ''
+  })
+
+  const openNewModal = () => {
+    setEditingLaunch(null)
+    const now = new Date()
+    const in2Days = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
+    setFormData({
+      name: '',
+      category: 'brownies',
+      p500: '',
+      p1kg: '',
+      unit: '',
+      description: '',
+      img: '/images/hamper.png',
+      comingSoonDate: now.toISOString().slice(0, 16),
+      launchDate: in2Days.toISOString().slice(0, 16),
+      showCountdownTimer: true,
+      whatsappMessage: ''
+    })
+    setShowModal(true)
+  }
+
+  const openEditModal = (launchItem) => {
+    setEditingLaunch(launchItem)
+    setFormData({
+      name: launchItem.name || '',
+      category: launchItem.category || 'brownies',
+      p500: launchItem.p500 || '',
+      p1kg: launchItem.p1kg || '',
+      unit: launchItem.unit || '',
+      description: launchItem.description || '',
+      img: launchItem.img || '/images/hamper.png',
+      comingSoonDate: launchItem.comingSoonDate ? new Date(launchItem.comingSoonDate).toISOString().slice(0, 16) : '',
+      launchDate: launchItem.launchDate ? new Date(launchItem.launchDate).toISOString().slice(0, 16) : '',
+      showCountdownTimer: launchItem.showCountdownTimer !== false,
+      whatsappMessage: launchItem.whatsappMessage || ''
+    })
+    setShowModal(true)
+  }
+
+  const handleDelete = (id, name) => {
+    if (!window.confirm(`Delete scheduled launch for "${name}"?`)) return
+    const updated = deleteScheduledLaunch(id)
+    setLaunches(updated)
+    setSuccess(`Deleted "${name}"`)
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const handleSave = (e) => {
+    e.preventDefault()
+    if (!formData.name.trim() || !formData.p500 || !formData.launchDate) return
+
+    const launchObj = {
+      id: editingLaunch ? editingLaunch.id : `launch-${Date.now()}`,
+      name: formData.name.trim(),
+      category: formData.category,
+      p500: Number(formData.p500),
+      p1kg: formData.p1kg ? Number(formData.p1kg) : null,
+      unit: formData.unit ? formData.unit.trim() : null,
+      description: formData.description ? formData.description.trim() : '',
+      img: formData.img || '/images/hamper.png',
+      comingSoonDate: formData.comingSoonDate ? new Date(formData.comingSoonDate).toISOString() : new Date().toISOString(),
+      launchDate: new Date(formData.launchDate).toISOString(),
+      showCountdownTimer: formData.showCountdownTimer,
+      whatsappMessage: formData.whatsappMessage ? formData.whatsappMessage.trim() : `Hi Batter & Bliss! Notify me when ${formData.name} launches!`
+    }
+
+    let updated = []
+    if (editingLaunch) {
+      updated = launches.map(l => l.id === editingLaunch.id ? launchObj : l)
+    } else {
+      updated = [launchObj, ...launches]
+    }
+
+    setLaunches(updated)
+    saveScheduledLaunches(updated)
+    setShowModal(false)
+    setSuccess(editingLaunch ? `Updated launch for "${formData.name}"` : `Scheduled launch for "${formData.name}"!`)
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const CATEGORY_LABELS = {
+    'all': 'All Categories',
+    'brownies': 'Brownies',
+    'tea-cakes': 'Tea Cakes',
+    'guilt-free': 'Guilt-Free Bakes',
+    'cake-jars': 'Cake Jars'
+  }
+
+  const visibleLaunches = selectedCatFilter === 'all'
+    ? launches
+    : launches.filter(l => l.category === selectedCatFilter)
+
+  return (
+    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-rose/12 shadow-[0_4px_32px_rgba(44,26,14,0.08)] max-w-5xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose/10 pb-5">
+        <div>
+          <span className="text-[0.68rem] font-bold text-rose uppercase tracking-widest">Product Roadmap</span>
+          <h2 className="font-serif text-2xl font-bold text-brown-dark flex items-center gap-2">
+            <span>Scheduled Product Launches</span>
+            <Rocket className="w-5 h-5 text-rose" />
+          </h2>
+          <p className="text-xs text-brown-light mt-1">
+            Schedule new bakes to display as "Coming Soon" with live countdown timers, then automatically switch to "Live".
+          </p>
+        </div>
+
+        <button
+          onClick={openNewModal}
+          className="px-5 py-2.5 rounded-2xl bg-brown-dark text-cream font-bold text-xs shadow-md hover:bg-brown-mid transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <Plus className="w-4 h-4 text-cream" />
+          <span>Schedule New Launch</span>
+        </button>
+      </div>
+
+      {/* Category Filter Bar for Launches */}
+      <div className="bg-cream/30 p-3 rounded-2xl border border-rose/12 flex items-center gap-2 overflow-x-auto">
+        <button
+          onClick={() => setSelectedCatFilter('all')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            selectedCatFilter === 'all'
+              ? 'bg-brown-dark text-cream shadow-md'
+              : 'bg-white text-brown-mid hover:bg-rose/10 border border-rose/10'
+          }`}
+        >
+          All Categories ({launches.length})
+        </button>
+        {menuCategories.map(cat => {
+          const count = launches.filter(l => l.category === cat.id).length
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCatFilter(cat.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                selectedCatFilter === cat.id
+                  ? 'bg-brown-dark text-cream shadow-md'
+                  : 'bg-white text-brown-mid hover:bg-rose/10 border border-rose/10'
+              }`}
+            >
+              {cat.category || cat.title || cat.id} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      {success && (
+        <div className="p-3 bg-green-100 border border-green-300 text-green-800 rounded-xl text-xs font-semibold animate-stepIn">
+          ✓ {success}
+        </div>
+      )}
+
+      {/* Table of Launches */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="border-b border-rose/15 text-brown-mid uppercase tracking-wider text-[0.68rem] font-bold">
+              <th className="py-3 px-2">Item</th>
+              <th className="py-3 px-2">Category</th>
+              <th className="py-3 px-2">Price</th>
+              <th className="py-3 px-2">Coming Soon Start</th>
+              <th className="py-3 px-2">Official Launch Date</th>
+              <th className="py-3 px-2">Status</th>
+              <th className="py-3 px-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-rose/10">
+            {visibleLaunches.map(l => {
+              const state = getLaunchState(l)
+              const isComingSoon = state === 'coming_soon'
+              const isLive = state === 'live'
+
+              return (
+                <tr key={l.id} className="hover:bg-cream/30 transition-colors">
+                  <td className="py-3 px-2 flex items-center gap-3">
+                    <img src={l.img || '/images/cake.png'} alt={l.name} className="w-10 h-10 rounded-xl object-cover border border-rose/20" />
+                    <div>
+                      <span className="font-bold text-brown-dark text-sm block">{l.name}</span>
+                      <span className="text-[0.65rem] text-brown-light line-clamp-1">{l.description}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-2 font-medium capitalize text-brown-dark">{l.category}</td>
+                  <td className="py-3 px-2 font-bold text-brown-dark">₹{l.p500}</td>
+                  <td className="py-3 px-2 text-brown-light">{new Date(l.comingSoonDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className="py-3 px-2 font-semibold text-brown-dark">{new Date(l.launchDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className="py-3 px-2">
+                    {isComingSoon ? (
+                      <span className="bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-1 rounded-full font-bold text-[0.65rem] inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600 animate-spin" style={{ animationDuration: '6s' }} />
+                        <span>Coming Soon</span>
+                      </span>
+                    ) : isLive ? (
+                      <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-1 rounded-full font-bold text-[0.65rem] inline-flex items-center gap-1">
+                        <Rocket className="w-3 h-3 text-emerald-600" />
+                        <span>Live / Launched</span>
+                      </span>
+                    ) : (
+                      <span className="bg-slate-100 text-slate-700 border border-slate-300 px-2.5 py-1 rounded-full font-bold text-[0.65rem] inline-flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-500" />
+                        <span>Draft</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-2 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => openEditModal(l)}
+                        className="p-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors font-bold text-xs cursor-pointer flex items-center gap-1 border border-amber-200"
+                        title="Edit Launch"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(l.id, l.name)}
+                        className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-bold text-xs cursor-pointer flex items-center gap-1 border border-red-200"
+                        title="Delete Launch"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Schedule Launch Modal */}
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-rose/20 flex flex-col max-h-[88vh] my-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-rose/10 pb-3 shrink-0">
+              <h3 className="font-serif text-xl font-bold text-brown-dark flex items-center gap-2">
+                <span>{editingLaunch ? 'Edit Scheduled Launch' : 'Schedule New Product Launch'}</span>
+                <Rocket className="w-5 h-5 text-rose" />
+              </h3>
+              <button onClick={() => setShowModal(false)} className="text-brown-light hover:text-brown-dark font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form id="launch-form" onSubmit={handleSave} className="flex-1 overflow-y-auto py-4 space-y-3.5 text-xs pr-1">
+              <div>
+                <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Product Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Matcha Pistachio Cheesecake Jar"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Category *</label>
+                  <select
+                    value={formData.category}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                  >
+                    {menuCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.category || cat.title || cat.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Price (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="e.g. 580"
+                    value={formData.p500}
+                    onChange={e => setFormData({ ...formData, p500: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Coming Soon Start *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={formData.comingSoonDate}
+                    onChange={e => setFormData({ ...formData, comingSoonDate: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Official Launch Date *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={formData.launchDate}
+                    onChange={e => setFormData({ ...formData, launchDate: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
+                <input
+                  type="checkbox"
+                  id="showCountdownTimer"
+                  checked={formData.showCountdownTimer}
+                  onChange={e => setFormData({ ...formData, showCountdownTimer: e.target.checked })}
+                  className="w-4 h-4 rounded border-amber-300 text-brown-dark focus:ring-amber-400 cursor-pointer"
+                />
+                <label htmlFor="showCountdownTimer" className="text-xs font-bold cursor-pointer select-none">
+                  Display Live Countdown Timer on Homepage (Optional)
+                </label>
+              </div>
+
+              <div>
+                <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem] flex justify-between">
+                  <span>Product Image</span>
+                  <span className="text-[0.65rem] text-rose font-normal uppercase">Upload File or URL</span>
+                </label>
+
+                {/* Thumbnail Preview */}
+                {formData.img && (
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-rose/20 shadow-xs mb-2 group shrink-0">
+                    <img src={formData.img} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, img: '' })}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-600 text-white font-bold text-[0.65rem] flex items-center justify-center shadow-md cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 px-3.5 py-2.5 rounded-xl border border-rose/25 bg-cream/40 text-brown-dark text-xs font-bold cursor-pointer hover:bg-cream/70 transition-colors text-center flex items-center justify-center gap-2 border-dashed">
+                      <Upload className="w-4 h-4 text-brown-dark" />
+                      <span>Upload Local Image File</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            const reader = new FileReader()
+                            reader.onloadend = () => {
+                              setFormData({ ...formData, img: reader.result })
+                            }
+                            reader.readAsDataURL(file)
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Or paste Image URL (e.g. /images/brownies.png)"
+                      value={formData.img}
+                      onChange={e => setFormData({ ...formData, img: e.target.value })}
+                      className="flex-1 px-3.5 py-2 rounded-xl border border-rose/25 text-xs text-brown-dark focus:outline-none focus:border-rose"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">Description</label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe flavors, texture, pure butter ingredients..."
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-brown-dark mb-1 uppercase text-[0.68rem]">WhatsApp Alert Message (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="Hi Batter & Bliss! Notify me when [Product] launches!"
+                  value={formData.whatsappMessage}
+                  onChange={e => setFormData({ ...formData, whatsappMessage: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose/25 text-brown-dark focus:outline-none focus:border-rose text-xs"
+                />
+              </div>
+            </form>
+
+            {/* Modal Action Footer */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-rose/10 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                form="launch-form"
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-brown-dark text-cream font-bold hover:bg-brown-mid shadow-md cursor-pointer flex items-center gap-1.5"
+              >
+                <Rocket className="w-4 h-4 text-cream" />
+                <span>{editingLaunch ? 'Save Changes' : 'Save Launch'}</span>
+              </button>
+            </div>
+
           </div>
         </div>,
         document.body
@@ -620,7 +1291,8 @@ function ThemesTab() {
   }
 
   const THEMES = [
-    { id: 'rakhi',     name: 'Raksha Bandhan', icon: '🪢', color: 'Purple, Green & Red Theme', bg: 'bg-purple-900 text-purple-100' },
+    { id: 'rakhi',     name: 'Raksha Bandhan', icon: '🪢', color: 'Purple, Pink & Emerald Theme', bg: 'bg-purple-900 text-purple-100' },
+    { id: 'independenceday', name: 'Independence Day', icon: '🇮🇳', color: 'Saffron, White & Green (15th Aug)', bg: 'bg-orange-800 text-orange-100' },
     { id: 'diwali',    name: 'Diwali',         icon: '🪔', color: 'Royal Gold, Amber & Maroon', bg: 'bg-amber-800 text-amber-100' },
     { id: 'christmas', name: 'Christmas',      icon: '🎄', color: 'Festive Red, Green & Gold',  bg: 'bg-red-900 text-red-100' },
     { id: 'holi',      name: 'Holi',           icon: '🎨', color: 'Gulal Pink, Cyan & Violet',   bg: 'bg-pink-800 text-pink-100' },
@@ -633,7 +1305,10 @@ function ThemesTab() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose/10 pb-5">
         <div>
           <span className="text-[0.68rem] font-bold text-rose uppercase tracking-widest">Admin Control</span>
-          <h2 className="font-serif text-2xl font-bold text-brown-dark">Festive Theme System 🎨</h2>
+          <h2 className="font-serif text-2xl font-bold text-brown-dark flex items-center gap-2">
+            <span>Festive Theme System</span>
+            <Palette className="w-5 h-5 text-rose" />
+          </h2>
           <p className="text-xs text-brown-light mt-1">
             Select a festival theme to activate across the entire website. Perfect for testing, previews, and seasonal campaigns.
           </p>
@@ -745,9 +1420,10 @@ export default function AdminDashboard() {
   const pendingCount = orders.filter(o => o.status === 'pending').length
 
   const TABS = [
-    { id: 'orders', label: 'Orders', icon: '📦', badge: pendingCount || null },
-    { id: 'menu',   label: 'Menu Management', icon: '🍽️', badge: null },
-    { id: 'themes', label: 'Festive Themes', icon: '🎨', badge: null },
+    { id: 'orders', label: 'Orders', icon: <Package className="w-4 h-4" />, badge: pendingCount || null },
+    { id: 'menu',   label: 'Menu Management', icon: <Utensils className="w-4 h-4" />, badge: null },
+    { id: 'launches', label: 'Scheduled Launches', icon: <Rocket className="w-4 h-4" />, badge: null },
+    { id: 'themes', label: 'Festive Themes', icon: <Palette className="w-4 h-4" />, badge: null },
   ]
 
   return (
@@ -791,12 +1467,12 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-1 border-t border-rose/8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex gap-1 border-t border-rose/8 overflow-x-auto">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 cursor-pointer relative ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 cursor-pointer relative shrink-0 ${
                 activeTab === tab.id
                   ? 'border-brown-dark text-brown-dark'
                   : 'border-transparent text-brown-light hover:text-brown-mid hover:border-rose/30'
@@ -821,6 +1497,11 @@ export default function AdminDashboard() {
         {activeTab === 'menu' && (
           <div className="step-in">
             <MenuTab />
+          </div>
+        )}
+        {activeTab === 'launches' && (
+          <div className="step-in">
+            <LaunchesTab />
           </div>
         )}
         {activeTab === 'themes' && (

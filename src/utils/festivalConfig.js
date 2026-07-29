@@ -5,12 +5,16 @@ export const FESTIVALS = {
     id: 'rakhi',
     name: 'Raksha Bandhan',
     emoji: '🪢',
+    ornamentType: 'rakhi',
     startDate: '2025-07-20',
     endDate: '2025-08-15',
     colors: {
       primary: '#581C87',
-      bannerBg: 'bg-gradient-to-r from-purple-900 via-red-600 to-emerald-800',
-      sectionBg: 'from-purple-950 via-purple-900 to-emerald-950',
+      bannerBg: 'bg-gradient-to-r from-purple-900 via-pink-600 to-emerald-800',
+      sectionBg: 'from-purple-950 via-pink-950 to-emerald-950',
+      orbLeft: 'bg-purple-600/30',
+      orbCenter: 'bg-pink-600/30',
+      orbRight: 'bg-emerald-600/30'
     },
     topBanner: {
       text: '🪢 Raksha Bandhan Special — Order Handcrafted Rakhi Hampers & Custom Sweet Boxes!',
@@ -30,7 +34,7 @@ export const FESTIVALS = {
         desc: '6 Assorted Fudgy Brownies + Designer Rakhi + Roli Chawal in a Luxury Velvet Box',
         price: 899,
         size: '1 Gift Box',
-        tag: '🪢 Rakhi Bestseller',
+        tag: 'Rakhi Bestseller',
         img: '/images/hamper.png',
         themeColor: 'purple'
       },
@@ -40,7 +44,7 @@ export const FESTIVALS = {
         desc: 'Walnut Brownie Box (500g) + Marble Tea Cake (500g) + 2 Cake Jars + 2 Designer Rakhis',
         price: 1399,
         size: 'Deluxe Hamper',
-        tag: '⭐ Premium Gift',
+        tag: 'Premium Gift',
         img: '/images/brownies.png',
         themeColor: 'green'
       },
@@ -50,7 +54,7 @@ export const FESTIVALS = {
         desc: 'Customize your own hamper! Choose your favourite brownies, cakes & custom note.',
         price: 699,
         size: 'Custom Pack',
-        tag: '🎨 Fully Customizable',
+        tag: 'Fully Customizable',
         img: '/images/cake.png',
         isCustomWhatsApp: true,
         themeColor: 'red'
@@ -62,12 +66,16 @@ export const FESTIVALS = {
     id: 'diwali',
     name: 'Diwali',
     emoji: '🪔',
+    ornamentType: 'diya',
     startDate: '2025-10-10',
     endDate: '2025-11-05',
     colors: {
       primary: '#B8860B',
       bannerBg: 'bg-gradient-to-r from-amber-700 via-yellow-600 to-red-800',
-      sectionBg: 'from-amber-950 via-yellow-900 to-red-950',
+      sectionBg: 'from-amber-950 via-red-950 to-amber-900',
+      orbLeft: 'bg-amber-600/35',
+      orbCenter: 'bg-yellow-500/30',
+      orbRight: 'bg-red-600/35'
     },
     topBanner: {
       text: '🪔 Happy Diwali! Gifting Deluxe Mithai Brownie Boxes & Festive Dry Fruit Hampers ✨',
@@ -87,7 +95,7 @@ export const FESTIVALS = {
         desc: 'Saffron Pistachio Brownies + Almond Tea Cake + 2 Diya Candles & Golden Greeting Card',
         price: 1099,
         size: 'Luxury Box',
-        tag: '🪔 Shahi Bestseller',
+        tag: 'Shahi Bestseller',
         img: '/images/hamper.png',
         themeColor: 'purple'
       },
@@ -97,7 +105,7 @@ export const FESTIVALS = {
         desc: 'Loaded Roasted Almond & Walnut Brownies + Roasted Cashews + Pistachio Jar',
         price: 1599,
         size: 'Grand Hamper',
-        tag: '✨ Festive Favorite',
+        tag: 'Festive Favorite',
         img: '/images/brownies.png',
         themeColor: 'green'
       },
@@ -107,7 +115,7 @@ export const FESTIVALS = {
         desc: 'Order custom bulk boxes with your company logo & personalized festive notes.',
         price: 799,
         size: 'Bulk & Custom',
-        tag: '💼 Corporate Gifting',
+        tag: 'Corporate Gifting',
         img: '/images/cake.png',
         isCustomWhatsApp: true,
         themeColor: 'red'
@@ -119,12 +127,16 @@ export const FESTIVALS = {
     id: 'christmas',
     name: 'Christmas & Winter',
     emoji: '🎄',
+    ornamentType: 'snowflake',
     startDate: '2025-12-10',
     endDate: '2025-12-28',
     colors: {
       primary: '#991B1B',
       bannerBg: 'bg-gradient-to-r from-red-900 via-emerald-800 to-green-900',
-      sectionBg: 'from-red-950 via-green-950 to-slate-900',
+      sectionBg: 'from-red-950 via-emerald-950 to-slate-950',
+      orbLeft: 'bg-red-600/35',
+      orbCenter: 'bg-emerald-600/30',
+      orbRight: 'bg-cyan-600/30'
     },
     topBanner: {
       text: '🎄 Merry Christmas! Freshly Baked Authentic Plum Cakes & Gingerbread Brownies ❄️',
@@ -144,7 +156,7 @@ export const FESTIVALS = {
         desc: 'Loaded with rum-soaked dates, raisins, almonds & winter spices. 100% Eggless.',
         price: 850,
         size: '500g Loaf',
-        tag: '🎄 Xmas Essential',
+        tag: 'Xmas Essential',
         img: '/images/cake.png',
         themeColor: 'purple'
       },
@@ -154,7 +166,7 @@ export const FESTIVALS = {
         desc: 'Dark Chocolate Fudge Brownies + Red Velvet Jar + Christmas Ornament',
         price: 999,
         size: 'Festive Box',
-        tag: '🎅 Kids & Family Favorite',
+        tag: 'Kids & Family Favorite',
         img: '/images/brownies.png',
         themeColor: 'green'
       },
@@ -164,7 +176,7 @@ export const FESTIVALS = {
         desc: 'Build your winter basket with Plum Cakes, Brownie Bites & Hot Chocolate Jars.',
         price: 1199,
         size: 'Custom Gift',
-        tag: '❄️ Winter Special',
+        tag: 'Winter Special',
         img: '/images/hamper.png',
         isCustomWhatsApp: true,
         themeColor: 'red'
@@ -176,12 +188,16 @@ export const FESTIVALS = {
     id: 'holi',
     name: 'Holi',
     emoji: '🎨',
+    ornamentType: 'gulal',
     startDate: '2026-03-01',
     endDate: '2026-03-20',
     colors: {
       primary: '#BE185D',
       bannerBg: 'bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-600',
-      sectionBg: 'from-pink-950 via-purple-950 to-indigo-950',
+      sectionBg: 'from-pink-950 via-purple-950 to-cyan-950',
+      orbLeft: 'bg-pink-600/35',
+      orbCenter: 'bg-purple-600/30',
+      orbRight: 'bg-cyan-600/35'
     },
     topBanner: {
       text: '🎨 Happy Holi! Vibrant Thandai Brownies, Gujiya Cakes & Organic Gulal Hampers 🎉',
@@ -225,6 +241,67 @@ export const FESTIVALS = {
         img: '/images/cake.png',
         isCustomWhatsApp: true,
         themeColor: 'red'
+      }
+    ]
+  },
+
+  independenceday: {
+    id: 'independenceday',
+    name: 'Independence Day',
+    emoji: '🇮🇳',
+    ornamentType: 'tiranga',
+    startDate: '2025-08-01',
+    endDate: '2025-08-18',
+    colors: {
+      primary: '#D97706',
+      bannerBg: 'bg-gradient-to-r from-orange-600 via-amber-500 via-white/20 to-emerald-700',
+      sectionBg: 'from-orange-950 via-amber-950 to-emerald-950',
+      orbLeft: 'bg-orange-600/35',
+      orbCenter: 'bg-blue-600/30',
+      orbRight: 'bg-emerald-600/35'
+    },
+    topBanner: {
+      text: '🇮🇳 79th Independence Day Special — Celebrate Freedom with Tricolor Gourmet Hampers & Freedom Sweet Boxes! 🎁',
+      cta: 'Explore Freedom Bakes 🇮🇳'
+    },
+    hero: {
+      badge: '🇮🇳 15th August Freedom Special 🎁',
+      title: 'Celebrate the Taste of Freedom ♡',
+      subtitle: 'Handcrafted Tricolor Velvet Brownies, Saffron Pistachio Loaves & Patriotic Gift Hampers for 15th August celebrations.',
+      primaryBtnText: 'Shop Independence Hampers 🇮🇳',
+      bgGradient: 'from-orange-950/30 via-amber-950/20 to-emerald-950/25'
+    },
+    specialProducts: [
+      {
+        id: 'freedom-gourmet-box',
+        name: 'Royal Tricolor Freedom Gourmet Box',
+        desc: 'Saffron Pistachio, Vanilla Cream & Dark Chocolate Brownies + Independence Greeting Card',
+        price: 899,
+        size: '1 Gift Box',
+        tag: 'Freedom Bestseller',
+        img: '/images/hamper.png',
+        themeColor: 'orange'
+      },
+      {
+        id: 'tricolor-celebration-bliss',
+        name: 'Independence Day Deluxe Hamper',
+        desc: 'Orange Saffron Tea Cake (500g) + Matcha Tea Cake (500g) + 2 Cake Jars + Indian Flag Ribbon Box',
+        price: 1399,
+        size: 'Deluxe Hamper',
+        tag: 'Premium Gift',
+        img: '/images/brownies.png',
+        themeColor: 'green'
+      },
+      {
+        id: 'custom-freedom-box',
+        name: 'Custom Corporate & School Freedom Hampers',
+        desc: 'Order custom bulk boxes with personalized patriotic messages for 15th August events.',
+        price: 699,
+        size: 'Custom Pack',
+        tag: 'Fully Customizable',
+        img: '/images/cake.png',
+        isCustomWhatsApp: true,
+        themeColor: 'blue'
       }
     ]
   }

@@ -5,6 +5,7 @@ import CartDrawer       from './components/CartDrawer'
 import Navbar          from './components/Navbar'
 import HeroCarousel    from './components/HeroCarousel'
 import FestivalSection from './components/FestivalSection'
+import NewLaunchSection from './components/NewLaunchSection'
 import FestivalThemeTester from './components/FestivalThemeTester'
 import Marquee         from './components/Marquee'
 import About           from './components/About'
@@ -34,9 +35,10 @@ function MainSite() {
   return (
     <>
       <Navbar />
-      <main>
-        <HeroCarousel />
+      <main className="pt-28 sm:pt-32">
         <FestivalSection />
+        <NewLaunchSection />
+        <HeroCarousel />
         <Marquee />
         <Menu />
         <About />

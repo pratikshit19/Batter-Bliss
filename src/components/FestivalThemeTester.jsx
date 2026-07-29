@@ -70,6 +70,16 @@ export default function FestivalThemeTester() {
         </button>
 
         <button
+          onClick={() => handleSelect('independenceday')}
+          className={`px-2.5 py-1.5 rounded-lg text-[0.7rem] font-bold text-left transition-colors cursor-pointer flex items-center gap-1 ${
+            selected === 'independenceday' ? 'bg-orange-600 text-white shadow-xs' : 'bg-white/10 hover:bg-white/20 text-cream'
+          }`}
+        >
+          <span>🇮🇳</span>
+          <span>15th Aug</span>
+        </button>
+
+        <button
           onClick={() => handleSelect('holi')}
           className={`px-2.5 py-1.5 rounded-lg text-[0.7rem] font-bold text-left transition-colors cursor-pointer flex items-center gap-1 ${
             selected === 'holi' ? 'bg-pink-600 text-white shadow-xs' : 'bg-white/10 hover:bg-white/20 text-cream'
