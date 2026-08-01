@@ -6,8 +6,8 @@ export const FESTIVALS = {
     name: 'Raksha Bandhan',
     emoji: '🪢',
     ornamentType: 'rakhi',
-    startDate: '2025-07-20',
-    endDate: '2025-08-15',
+    startDate: '2025-08-19',
+    endDate: '2025-09-05',
     colors: {
       primary: '#581C87',
       bannerBg: 'bg-gradient-to-r from-purple-900 via-pink-600 to-emerald-800',
@@ -310,9 +310,9 @@ export const FESTIVALS = {
 // Theme override setting persisted in localStorage
 export function getSavedThemeSetting() {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('batterbliss_active_theme') || 'rakhi'
+    return localStorage.getItem('batterbliss_active_theme') || 'independenceday'
   }
-  return 'rakhi'
+  return 'independenceday'
 }
 
 export function setTestFestivalTheme(themeId) {
@@ -348,6 +348,6 @@ export function getActiveFestival() {
     }
   }
 
-  // Fallback to Rakhi
-  return { ...FESTIVALS.rakhi, active: true }
+  // Fallback to Independence Day
+  return { ...FESTIVALS.independenceday, active: true }
 }
